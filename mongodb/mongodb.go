@@ -8,7 +8,6 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
-	// "strconv"
 	"time"
 )
 
@@ -55,7 +54,7 @@ func Insert(model interface{}, robj interface{}, user base.User) (err error) {
 			if bstr == "_id" {
 				refobj.Field(i).Set(reflect.ValueOf(bson.NewObjectId().Hex()))
 			}
-			if v, ok := refobj.Field(i).Interface().(base.Sys); ok {
+			if v, ok := refobj.Field(i).Interface().(base.Base); ok {
 				temp := time.Now()
 				v.CreateTime = temp
 				v.UpdateTime = temp
@@ -76,21 +75,22 @@ func Remove(model interface{}, qjson string, user base.User) (err error) {
 		return
 	}
 	Use(col, func(c *mgo.Collection) {
-		err = Update(model, qjson, `{"sys.isdelete":"true"}`, user)
+		err = Update(model, qjson, `{"base.isdelete":"true"}`, user)
 	})
 	return
 }
 
 //Query 查询
-func Query(model interface{}, qjson string, page, pageSize int, sort string) (datas interface{}, total int, err error) {
+func Query(model interface{}, qjson string, page, pageSize int, sort string, containsDeleted bool) (datas interface{}, total int, err error) {
 	col, err := getCollection(model)
 	if err != nil {
 		return
 	}
-	q, err := toBson(qjson)
+	qi, err := toQueryBson(qjson, containsDeleted)
 	if err != nil {
 		return
 	}
+
 	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(model)), 0, 0)
 	temps := reflect.New(slice.Type())
 	temps.Elem().Set(slice)
@@ -98,7 +98,7 @@ func Query(model interface{}, qjson string, page, pageSize int, sort string) (da
 		if sort == "" {
 			sort = "-updatetime -createtime"
 		}
-		qe := c.Find(q).Sort(sort)
+		qe := c.Find(qi).Sort(sort)
 		if total, err = qe.Count(); err != nil {
 			return
 		}
@@ -113,7 +113,7 @@ func Update(model interface{}, qjson, ujson string, user base.User) (err error) 
 	if err != nil {
 		return
 	}
-	q, err := toBson(qjson)
+	q, err := toQueryBson(qjson, false)
 	if err != nil {
 		return
 	}
@@ -123,8 +123,8 @@ func Update(model interface{}, qjson, ujson string, user base.User) (err error) 
 	}
 	up := bson.M{"$set": u}
 	temp := up["$set"].(bson.M)
-	temp["sys.updatetime"] = time.Now()
-	temp["sys.updater"] = user.ID
+	temp["base.updatetime"] = time.Now()
+	temp["base.updater"] = user.ID
 	Use(col, func(c *mgo.Collection) {
 		if err = c.Update(q, up); err != nil {
 		}
@@ -133,12 +133,13 @@ func Update(model interface{}, qjson, ujson string, user base.User) (err error) 
 }
 
 //Count 计数
-func Count(model interface{}, qjson string) (count int, err error) {
+func Count(model interface{}, qjson string, containsDeleted bool) (count int, err error) {
 	col, err := getCollection(model)
 	if err != nil {
 		return 0, err
 	}
-	b, err := toBson(qjson)
+	var b bson.M
+	b, err = toQueryBson(qjson, containsDeleted)
 	if err != nil {
 		return 0, err
 	}
@@ -149,6 +150,7 @@ func Count(model interface{}, qjson string) (count int, err error) {
 	return
 }
 
+//GetCollection 获取模型对应的集合
 func getCollection(model interface{}) (string, error) {
 	col := ""
 	t := reflect.TypeOf(model)
@@ -170,10 +172,24 @@ func toBson(json string) (bson.M, error) {
 	}
 	var qi bson.M
 	if err := bson.UnmarshalJSON([]byte(json), &qi); err != nil {
-		if _, ok := qi["sys.isdelete"]; !ok {
-			qi["sys.isdelete"] = false
+		return nil, errors.New("json=" + json + ",查询mongodb 查询 json错误 " + err.Error())
+	}
+	return qi, nil
+}
+
+func toQueryBson(qjson string, containsDeleted bool) (bson.M, error) {
+	qi, err := toBson(qjson)
+	if err != nil {
+		return qi, err
+	}
+	if !containsDeleted {
+		if qi == nil {
+			qi = bson.M{"base.isdelete": false}
+		} else {
+			if _, ok := qi["base.isdelete"]; !ok {
+				qi["base.isdelete"] = false
+			}
 		}
-		return nil, errors.New("json=" + json + ",查询mongodb 查询 json错误")
 	}
 	return qi, nil
 }
