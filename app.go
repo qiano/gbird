@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"gbird/base"
+	"gbird/logger"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"github.com/tommy351/gin-sessions"
@@ -21,7 +22,7 @@ type App struct {
 func NewApp(name string) *App {
 	var store = sessions.NewCookieStore([]byte(name))
 	r := gin.Default()
-	r.Static("/resource", "./resource")
+	r.Static("/assets", "./assets")
 	r.Use(sessions.Middleware(name+"session", store))
 	// r.Use(mw.CORSMiddleware())
 	// r.Use(mw.AgencyMiddleware())
@@ -33,14 +34,14 @@ func NewApp(name string) *App {
 }
 
 //RegisterModel 模型注册
-func (r *App) RegisterModel(model interface{}, refmodel interface{}) {
+func (r *App) RegisterModel(model interface{}, refmodel interface{}, routers ...*base.Router) {
 	rname, err := getRouterName(model)
 	if err != nil {
 		panic(err)
 	}
 	soles := getSoles(model)
-
 	grp := r.Group("/api/" + rname)
+
 	grp.GET("/query", func(c *gin.Context) {
 		sort, _ := c.GetQuery("sort")
 		pageIndex, _ := c.GetQuery("page")
@@ -61,6 +62,7 @@ func (r *App) RegisterModel(model interface{}, refmodel interface{}) {
 				"page":  idx}})
 		}
 	})
+	logger.Infoln("路由注册：GET" + " /api/" + rname + "/query")
 
 	grp.POST("/insert", func(c *gin.Context) {
 		data := c.PostForm("data")
@@ -100,6 +102,7 @@ func (r *App) RegisterModel(model interface{}, refmodel interface{}) {
 		}
 
 	})
+	logger.Infoln("路由注册：POST" + " /api/" + rname + "/insert")
 
 	grp.POST("/delete", func(c *gin.Context) {
 		data := c.PostForm("cond")
@@ -116,7 +119,29 @@ func (r *App) RegisterModel(model interface{}, refmodel interface{}) {
 			c.JSON(200, gin.H{"data": true})
 		}
 	})
+	logger.Infoln("路由注册：POST" + " /api/" + rname + "/delete")
 
+	for _, router := range routers {
+		method := strings.ToUpper(router.Method)
+		grp.Handle(method, router.RelativePath, func(c *gin.Context) {
+			ctx := &base.Context{Context: *c}
+			router.HandlerFunc(ctx)
+		})
+		logger.Infoln("路由注册：" + method + " /api/" + rname + "/" + router.RelativePath)
+	}
+
+}
+
+//RegisterRouter 路由注册
+func (r *App) RegisterRouter(routers ...*base.Router) {
+	for _, router := range routers {
+		method := strings.ToUpper(router.Method)
+		r.Handle(method, router.RelativePath, func(c *gin.Context) {
+			ctx := &base.Context{Context: *c}
+			router.HandlerFunc(ctx)
+		})
+		logger.Infoln("路由注册：" + method + " " + router.RelativePath)
+	}
 }
 
 func getRouterName(model interface{}) (string, error) {
