@@ -45,6 +45,7 @@ func AuthMiddleware(verifyURL string, needAuth func(string) bool) gin.HandlerFun
 						}
 					}
 					c.Writer.Write(body)
+					c.Abort()
 					return
 				}
 				c.Next()
