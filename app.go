@@ -29,7 +29,7 @@ func NewApp(name string) *App {
 	// r.Use(mw.AgencyMiddleware())
 	// r.Use(mw.AuthMiddleware())
 	r.GET("/", func(c *gin.Context) {
-		c.String(200, "apihub module server")
+		c.String(200, name+" module server")
 	})
 	return &App{Engine: r}
 }

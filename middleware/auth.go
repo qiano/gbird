@@ -50,7 +50,7 @@ func AuthMiddleware(verifyURL string, needAuth func(string) bool) gin.HandlerFun
 				c.Next()
 				return
 			}
-			c.JSON(200, gin.H{"errorcode": 0, "errormsg": "no token"})
+			c.AbortWithStatusJSON(200, gin.H{"errorcode": 0, "errormsg": "no token"})
 			return
 		}
 		c.Next()

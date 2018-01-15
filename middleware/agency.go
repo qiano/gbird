@@ -27,9 +27,10 @@ func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
 			resp, err := client.Do(req)
 			if err != nil {
 				logger.Fatalln(err)
-				c.JSON(500, gin.H{"errcode": 0, "errmsg": err.Error()})
+				c.AbortWithStatusJSON(500, gin.H{"errcode": 0, "errmsg": err.Error()})
 				return
 			}
+			defer resp.Body.Close()
 			body, _ := ioutil.ReadAll(resp.Body)
 			c.Status(resp.StatusCode)
 			for key, vals := range resp.Header {
@@ -40,10 +41,8 @@ func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
 					c.Writer.Header().Add(key, val)
 				}
 			}
-
 			c.Writer.Write(body)
-			defer resp.Body.Close()
-
+			c.Abort()
 			return
 		}
 		c.Next()
