@@ -12,7 +12,7 @@ import (
 func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if strings.ToLower(c.Request.Method) == "options" {
-			c.Next()
+			c.AbortWithStatus(204)
 			return
 		}
 		if target := getMap(c.Request.URL.Path); len(target) > 0 {
@@ -20,7 +20,6 @@ func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
 				target = target + "?" + c.Request.URL.RawQuery
 			}
 			logger.Infoln(c.Request.RequestURI, "->", target)
-
 			req, err := http.NewRequest(c.Request.Method, target, c.Request.Body)
 			req.Header = c.Request.Header
 			client := &http.Client{}
@@ -32,15 +31,19 @@ func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
 			}
 			defer resp.Body.Close()
 			body, _ := ioutil.ReadAll(resp.Body)
-			c.Status(resp.StatusCode)
 			for key, vals := range resp.Header {
-				if key == "Access-Control-Allow-Origin" {
-					continue
-				}
+				// if key == "Access-Control-Allow-Origin" ||
+				// 	key == "Access-Control-Allow-Credentials" ||
+				// 	key == "Access-Control-Allow-Headers" ||
+				// 	key == "Access-Control-Allow-Methods" ||
+				// 	key == "Vary" {
+				// 	continue
+				// }
 				for _, val := range vals {
 					c.Writer.Header().Add(key, val)
 				}
 			}
+			c.Status(resp.StatusCode)
 			c.Writer.Write(body)
 			c.Abort()
 			return
