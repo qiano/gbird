@@ -20,6 +20,7 @@ type App struct {
 
 //NewApp 创建实例
 func NewApp(name string) *App {
+
 	var store = sessions.NewCookieStore([]byte(name))
 	r := gin.Default()
 	r.Static("/assets", "./assets")
@@ -106,17 +107,22 @@ func (r *App) RegisterModel(model interface{}, refmodel interface{}, routers ...
 
 	grp.POST("/delete", func(c *gin.Context) {
 		data := c.PostForm("cond")
+		batch := c.PostForm("batch")
+		b, err := strconv.ParseBool(batch)
+		if err != nil {
+			b = false
+		}
 		ss := sessions.Get(c)
 		user := ss.Get("user")
 		var u base.User
 		if user != nil {
 			u = user.(base.User)
 		}
-		err := m.Remove(model, data, u)
+		info, err := m.Remove(model, data, u, b)
 		if err != nil {
-			c.JSON(500, gin.H{"errmsg": err.Error()})
+			c.JSON(500, gin.H{"errmsg": err.Error(), "data": info})
 		} else {
-			c.JSON(200, gin.H{"data": true})
+			c.JSON(200, gin.H{"data": info})
 		}
 	})
 	logger.Infoln("路由注册：POST" + " /api/" + rname + "/delete")

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gbird/base"
 	"gbird/config"
+	"gbird/logger"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
@@ -25,7 +26,8 @@ func init() {
 		fmt.Println(err)
 		panic(err)
 	}
-	fmt.Println("连接成功："+mongodbstr, DbName)
+
+	logger.Infoln("连接成功："+mongodbstr, DbName)
 	GlobalMgoSession = globalMgoSession
 	GlobalMgoSession.SetMode(mgo.Monotonic, true)
 	//default is 4096
@@ -69,13 +71,13 @@ func Insert(model interface{}, robj interface{}, user base.User) (err error) {
 }
 
 //Remove 删除
-func Remove(model interface{}, qjson string, user base.User) (err error) {
+func Remove(model interface{}, qjson string, user base.User, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(model)
 	if err != nil {
 		return
 	}
 	Use(col, func(c *mgo.Collection) {
-		err = Update(model, qjson, `{"base.isdelete":"true"}`, user)
+		info, err = Update(model, qjson, `{"base.isdelete":"true"}`, user, batch)
 	})
 	return
 }
@@ -107,8 +109,8 @@ func Query(model interface{}, qjson string, page, pageSize int, sort string, con
 	return temps.Interface(), total, nil
 }
 
-//Update 更新
-func Update(model interface{}, qjson, ujson string, user base.User) (err error) {
+//Update 更新单条记录
+func Update(model interface{}, qjson, ujson string, user base.User, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(model)
 	if err != nil {
 		return
@@ -126,7 +128,14 @@ func Update(model interface{}, qjson, ujson string, user base.User) (err error) 
 	temp["base.updatetime"] = time.Now()
 	temp["base.updater"] = user.ID
 	Use(col, func(c *mgo.Collection) {
-		if err = c.Update(q, up); err != nil {
+		if batch {
+			if info, err = c.UpdateAll(q, up); err != nil {
+
+			}
+		} else {
+			if err = c.Update(q, up); err != nil {
+				info.Updated = 1
+			}
 		}
 	})
 	return

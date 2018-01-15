@@ -20,20 +20,16 @@ package logger
 
 import (
 	"fmt"
+	. "gbird/config"
 	"io"
 	"log"
-	// "math"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
-	. "gbird/config"
 )
 
 var (
-	// 日志文件
-	trade_file = "trade.csv"
-	// override_file = "report"
 	info_file     = "info.log"
 	debug_file    = "debug.log"
 	trace_file    = "trace.log"
@@ -57,8 +53,6 @@ func GetFileName(source string) string {
 
 func init() {
 	os.Mkdir(ROOT+"/_log/", 0777)
-	// os.Mkdir(ROOT+"/cache/", 0777)
-
 }
 
 type logger struct {
@@ -75,26 +69,6 @@ func NewReport(out io.Writer) *logger {
 	return &logger{
 		Logger: log.New(out, "", log.LstdFlags),
 	}
-}
-
-func Tradef(format string, args ...interface{}) {
-	file, err := os.OpenFile(GetFileName(trade_file), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-	New(file).Printf(format, args...)
-
-}
-
-func Tradeln(args ...interface{}) {
-	file, err := os.OpenFile(GetFileName(trade_file), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-	New(file).Println(args...)
-
 }
 
 func Infof(format string, args ...interface{}) {
@@ -117,7 +91,11 @@ func Infoln(args ...interface{}) {
 	defer file.Close()
 	New(file).Println(args...)
 	if Config["infoconsole"] == "1" {
-		log.Println(args...)
+		as := []interface{}{"[GBIRD-INFO]"}
+		for _, v := range args {
+			as = append(as, v)
+		}
+		log.Println(as...)
 	}
 }
 
