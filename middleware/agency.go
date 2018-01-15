@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"gbird/logger"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
@@ -28,12 +27,10 @@ func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
 			resp, err := client.Do(req)
 			if err != nil {
 				logger.Fatalln(err)
-				fmt.Println(err)
 				c.JSON(500, gin.H{"errcode": 0, "errmsg": err.Error()})
 				return
 			}
 			body, _ := ioutil.ReadAll(resp.Body)
-			fmt.Println(string(body))
 			c.Status(resp.StatusCode)
 			for key, vals := range resp.Header {
 				if key == "Access-Control-Allow-Origin" {

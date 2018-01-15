@@ -91,7 +91,7 @@ func Infoln(args ...interface{}) {
 	defer file.Close()
 	New(file).Println(args...)
 	if Config["infoconsole"] == "1" {
-		as := []interface{}{"[GBIRD-INFO]"}
+		as := []interface{}{"[INFO]"}
 		for _, v := range args {
 			as = append(as, v)
 		}
@@ -123,8 +123,12 @@ func Errorln(args ...interface{}) {
 		args = append([]interface{}{"[", filepath.Base(callerFile), "]", line}, args...)
 	}
 	New(file).Println(args...)
-	if Config["errorconsole"] == "1" {
-		log.Println(args...)
+	if Config["infoconsole"] == "1" {
+		as := []interface{}{"[ERROR]"}
+		for _, v := range args {
+			as = append(as, v)
+		}
+		log.Println(as...)
 	}
 }
 
@@ -152,8 +156,12 @@ func Fatalln(args ...interface{}) {
 		args = append([]interface{}{"[", filepath.Base(callerFile), "]", line}, args...)
 	}
 	New(file).Println(args...)
-	if Config["fatalconsole"] == "1" {
-		log.Println(args...)
+	if Config["infoconsole"] == "1" {
+		as := []interface{}{"[FATAL]"}
+		for _, v := range args {
+			as = append(as, v)
+		}
+		log.Println(as...)
 	}
 }
 
