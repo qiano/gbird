@@ -5,6 +5,7 @@ import (
 	"errors"
 	"gbird/base"
 	"gbird/logger"
+	mw "gbird/middleware"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"github.com/tommy351/gin-sessions"
@@ -25,10 +26,8 @@ func NewApp(name string) *App {
 	r := gin.Default()
 	r.Static("/assets", "./assets")
 	r.Use(sessions.Middleware(name+"session", store))
-	// r.Use(mw.CORSMiddleware())
-	// r.Use(mw.AgencyMiddleware())
-	// r.Use(mw.AuthMiddleware())
-	r.GET("/", func(c *gin.Context) {
+	r.Use(mw.CORSMiddleware())
+	r.POST("/", func(c *gin.Context) {
 		c.String(200, name+" module server")
 	})
 	return &App{Engine: r}
