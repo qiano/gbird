@@ -1,7 +1,6 @@
 package gbird
 
 import (
-	"gbird/base"
 	"gbird/config"
 	"gbird/logger"
 	mw "gbird/middleware"
@@ -36,27 +35,21 @@ func NewApp(name string) *App {
 }
 
 //Router 路由注册
-func (a *App) Router(method, path string, f func(*base.Context)) {
+func (a *App) Router(method, path string, f func(*gin.Context)) {
 	m := strings.ToUpper(method)
-	a.Engine.Handle(m, path, func(c *gin.Context) {
-		ctx := &base.Context{Context: c}
-		f(ctx)
-	})
+	a.Engine.Handle(m, path, f)
 	logger.Infoln("路由注册：" + m + " " + path)
 }
 
 //ModelRouter 注册模型下的路由
-func (a *App) ModelRouter(robj interface{}, method, path string, f func(*base.Context)) {
+func (a *App) ModelRouter(robj interface{}, method, path string, f func(*gin.Context)) {
 	rname, err := getRouterName(robj)
 	if err != nil {
 		panic(err)
 	}
 	grp := a.Group("/api/" + rname)
 	m := strings.ToUpper(method)
-	grp.Handle(m, path, func(c *gin.Context) {
-		ctx := &base.Context{Context: c}
-		f(ctx)
-	})
+	grp.Handle(m, path, f)
 	logger.Infoln("路由注册：" + m + " /api/" + rname + path)
 }
 
@@ -80,3 +73,5 @@ func (a *App) UseMongodb() {
 	mongodb.GlobalMgoSession.SetPoolLimit(300)
 
 }
+
+

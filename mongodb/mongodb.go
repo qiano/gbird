@@ -3,6 +3,7 @@ package mongodb
 import (
 	"errors"
 	"gbird/base"
+	"gbird/auth"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
@@ -21,7 +22,7 @@ func UseCol(colname string, f func(c *mgo.Collection)) {
 	f(col)
 }
 //Insert 新增
-func Insert(robj interface{}, user base.User) (err error) {
+func Insert(robj interface{}, user auth.User) (err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return
@@ -49,7 +50,7 @@ func Insert(robj interface{}, user base.User) (err error) {
 }
 
 //Remove 删除
-func Remove(robj interface{}, qjson string, user base.User, batch bool) (info *mgo.ChangeInfo, err error) {
+func Remove(robj interface{}, qjson string, user auth.User, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return
@@ -89,7 +90,7 @@ func Query(robj interface{}, qjson string, page, pageSize int, sort string, cont
 }
 
 //Update 更新单条记录
-func Update(robj interface{}, qjson, ujson string, user base.User, batch bool) (info *mgo.ChangeInfo, err error) {
+func Update(robj interface{}, qjson, ujson string, user auth.User, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return

@@ -1,9 +1,8 @@
-package middleware
+package auth
 
 import (
 	"encoding/json"
 	"fmt"
-	"gbird/base"
 	"gbird/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/tommy351/gin-sessions"
@@ -12,8 +11,24 @@ import (
 	"strings"
 )
 
-type wrapuser struct {
-	Data base.User
+//User 用户
+type User struct {
+	ID       string `json:"_id"`
+	Name     string
+	UserName string
+	Roles    []interface{}
+	IsActive bool `json:"Is_Active"`
+}
+
+//CurUser 获取当前用户信息
+func CurUser(r *gin.Context) User {
+	var u User
+	ss := sessions.Get(r)
+	user := ss.Get("user")
+	if user != nil {
+		u = user.(User)
+	}
+	return u
 }
 
 //AuthMiddleware 权限中间件
@@ -30,7 +45,7 @@ func AuthMiddleware(verifyURL string, needAuth func(string) bool) gin.HandlerFun
 				body, _ := ioutil.ReadAll(res.Body)
 				defer res.Body.Close()
 				str := string(body)
-				var wu wrapuser
+				var wu struct{ Data User }
 				json.Unmarshal(body, &wu)
 				ss := sessions.Get(c)
 				ss.Set("user", wu.Data)

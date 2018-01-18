@@ -3,8 +3,8 @@ package gbird
 import (
 	"encoding/json"
 	"errors"
-	"gbird/base"
 	"gbird/logger"
+	"gbird/auth"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"reflect"
@@ -62,8 +62,7 @@ func (r *App) Register(robj interface{}) {
 
 		if count, err := m.Count(robj, exist, false); err == nil {
 			if count == 0 {
-				ctx := base.Context{Context: c}
-				u := ctx.CurUser()
+				u := auth.CurUser(c)
 				err := m.Insert(obj, u)
 				if err != nil {
 					c.JSON(500, gin.H{"errmsg": err.Error()})
@@ -86,8 +85,7 @@ func (r *App) Register(robj interface{}) {
 		if err != nil {
 			b = false
 		}
-		ctx := base.Context{Context: c}
-		u := ctx.CurUser()
+		u := auth.CurUser(c)
 		info, err := m.Remove(robj, data, u, b)
 		if err != nil {
 			c.JSON(500, gin.H{"errmsg": err.Error(), "data": info})

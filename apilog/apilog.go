@@ -3,6 +3,7 @@ package apilog
 import (
 	"bytes"
 	"gbird/base"
+	"gbird/auth"
 	"gbird/logger"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
@@ -47,8 +48,7 @@ func APILogMiddleware(getDesc func(string) string) gin.HandlerFunc {
 			IP:                c.ClientIP(),
 			QueryStringParams: c.Request.URL.RawQuery,
 			RequestDesc:       desc}
-		ctx := base.Context{Context: c}
-		user := ctx.CurUser()
+		user := auth.CurUser(c)
 		log.UserID = user.ID
 		log.UserName = user.UserName
 		m.Insert(log, user)
