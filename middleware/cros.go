@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"gbird/logger"
 	"github.com/gin-gonic/gin"
 )
 
 //CORSMiddleware 跨域
 func CORSMiddleware() gin.HandlerFunc {
+	logger.Infoln("跨域：开启")
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("origin")
 		c.Writer.Header().Set("Access-Control-Allow-Origin", origin)

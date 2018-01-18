@@ -2,10 +2,7 @@ package mongodb
 
 import (
 	"errors"
-	"fmt"
 	"gbird/base"
-	"gbird/config"
-	"gbird/logger"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
@@ -14,47 +11,28 @@ import (
 
 //GlobalMgoSession 全局mongo连接
 var GlobalMgoSession *mgo.Session
-var mongodbstr = config.Config["mongodbHost"]
-
 //DbName 数据库名
-var DbName = config.Config["mongodbDbName"]
-
-//Connect 连接Mongo数据库
-func init() {
-	globalMgoSession, err := mgo.DialWithTimeout(mongodbstr, 10*time.Second)
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
-
-	logger.Infoln("连接成功："+mongodbstr, DbName)
-	GlobalMgoSession = globalMgoSession
-	GlobalMgoSession.SetMode(mgo.Monotonic, true)
-	//default is 4096
-	GlobalMgoSession.SetPoolLimit(300)
-}
-
-//Use 使用Collection
-func Use(colname string, f func(c *mgo.Collection)) {
+var DbName string
+//UseCol 使用Collection
+func UseCol(colname string, f func(c *mgo.Collection)) {
 	session := GlobalMgoSession.Clone()
 	defer session.Close()
 	col := session.DB(DbName).C(colname)
 	f(col)
 }
-
 //Insert 新增
-func Insert(model interface{}, robj interface{}, user base.User) (err error) {
-	col, err := getCollection(model)
+func Insert(robj interface{}, user base.User) (err error) {
+	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
-	Use(col, func(c *mgo.Collection) {
+	UseCol(col, func(c *mgo.Collection) {
 		refobj := reflect.ValueOf(robj).Elem()
 		typeOfT := refobj.Type()
 		for i := 0; i < refobj.NumField(); i++ {
 			bstr := typeOfT.Field(i).Tag.Get("bson")
 			if bstr == "_id" {
-				refobj.Field(i).Set(reflect.ValueOf(bson.NewObjectId().Hex()))
+				refobj.Field(i).Set(reflect.ValueOf(bson.NewObjectId()))
 			}
 			if v, ok := refobj.Field(i).Interface().(base.Base); ok {
 				temp := time.Now()
@@ -71,20 +49,20 @@ func Insert(model interface{}, robj interface{}, user base.User) (err error) {
 }
 
 //Remove 删除
-func Remove(model interface{}, qjson string, user base.User, batch bool) (info *mgo.ChangeInfo, err error) {
-	col, err := getCollection(model)
+func Remove(robj interface{}, qjson string, user base.User, batch bool) (info *mgo.ChangeInfo, err error) {
+	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
-	Use(col, func(c *mgo.Collection) {
-		info, err = Update(model, qjson, `{"base.isdelete":"true"}`, user, batch)
+	UseCol(col, func(c *mgo.Collection) {
+		info, err = Update(robj, qjson, `{"base.isdelete":"true"}`, user, batch)
 	})
 	return
 }
 
 //Query 查询
-func Query(model interface{}, qjson string, page, pageSize int, sort string, containsDeleted bool) (datas interface{}, total int, err error) {
-	col, err := getCollection(model)
+func Query(robj interface{}, qjson string, page, pageSize int, sort string, containsDeleted bool) (datas interface{}, total int, err error) {
+	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
@@ -92,11 +70,12 @@ func Query(model interface{}, qjson string, page, pageSize int, sort string, con
 	if err != nil {
 		return
 	}
-
-	slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(model)), 0, 0)
+	refobj := reflect.ValueOf(robj).Elem()
+	t := refobj.Type()
+	slice := reflect.MakeSlice(reflect.SliceOf(t), 0, 0)
 	temps := reflect.New(slice.Type())
 	temps.Elem().Set(slice)
-	Use(col, func(c *mgo.Collection) {
+	UseCol(col, func(c *mgo.Collection) {
 		if sort == "" {
 			sort = "-updatetime -createtime"
 		}
@@ -110,8 +89,8 @@ func Query(model interface{}, qjson string, page, pageSize int, sort string, con
 }
 
 //Update 更新单条记录
-func Update(model interface{}, qjson, ujson string, user base.User, batch bool) (info *mgo.ChangeInfo, err error) {
-	col, err := getCollection(model)
+func Update(robj interface{}, qjson, ujson string, user base.User, batch bool) (info *mgo.ChangeInfo, err error) {
+	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
@@ -127,7 +106,7 @@ func Update(model interface{}, qjson, ujson string, user base.User, batch bool) 
 	temp := up["$set"].(bson.M)
 	temp["base.updatetime"] = time.Now()
 	temp["base.updater"] = user.ID
-	Use(col, func(c *mgo.Collection) {
+	UseCol(col, func(c *mgo.Collection) {
 		if batch {
 			if info, err = c.UpdateAll(q, up); err != nil {
 
@@ -142,8 +121,8 @@ func Update(model interface{}, qjson, ujson string, user base.User, batch bool) 
 }
 
 //Count 计数
-func Count(model interface{}, qjson string, containsDeleted bool) (count int, err error) {
-	col, err := getCollection(model)
+func Count(robj interface{}, qjson string, containsDeleted bool) (count int, err error) {
+	col, err := getCollection(robj)
 	if err != nil {
 		return 0, err
 	}
@@ -152,27 +131,24 @@ func Count(model interface{}, qjson string, containsDeleted bool) (count int, er
 	if err != nil {
 		return 0, err
 	}
-	Use(col, func(c *mgo.Collection) {
+	UseCol(col, func(c *mgo.Collection) {
 		q := c.Find(b)
 		count, err = q.Count()
 	})
 	return
 }
 
-//GetCollection 获取模型对应的集合
-func getCollection(model interface{}) (string, error) {
-	col := ""
-	t := reflect.TypeOf(model)
-	for i := 0; i < t.NumField(); i++ {
-		col = t.Field(i).Tag.Get("collection")
-		if col != "" {
-			break
-		}
+//DBRef 关联字段
+func DBRef(robj interface{}) (ref *mgo.DBRef, err error) {
+	col, err := getCollection(robj)
+	if err != nil {
+		return nil, err
 	}
-	if col == "" {
-		return col, errors.New("model:" + t.String() + ",未设置collection")
+	id, err := getMongoID(robj)
+	if err != nil {
+		return nil, err
 	}
-	return col, nil
+	return &mgo.DBRef{Collection: col, Id: id, Database: DbName}, nil
 }
 
 func toBson(json string) (bson.M, error) {
@@ -203,8 +179,8 @@ func toQueryBson(qjson string, containsDeleted bool) (bson.M, error) {
 	return qi, nil
 }
 
-func getMongoID(rins interface{}) (bson.ObjectId, error) {
-	refobj := reflect.ValueOf(rins).Elem()
+func getMongoID(robj interface{}) (bson.ObjectId, error) {
+	refobj := reflect.ValueOf(robj).Elem()
 	typeOfT := refobj.Type()
 	for i := 0; i < refobj.NumField(); i++ {
 		bstr := typeOfT.Field(i).Tag.Get("bson")
@@ -219,15 +195,19 @@ func getMongoID(rins interface{}) (bson.ObjectId, error) {
 	return "", errors.New("模型：" + typeOfT.String() + ",未找到 bson: _id 设置")
 }
 
-//DBRef 关联字段
-func DBRef(model interface{}, rins interface{}) (ref *mgo.DBRef, err error) {
-	col, err := getCollection(model)
-	if err != nil {
-		return nil, err
+//GetCollection 获取模型对应的集合
+func getCollection(robj interface{}) (string, error) {
+	col := ""
+	refobj := reflect.ValueOf(robj).Elem()
+	t := refobj.Type()
+	for i := 0; i < refobj.NumField(); i++ {
+		col = t.Field(i).Tag.Get("collection")
+		if col != "" {
+			break
+		}
 	}
-	id, err := getMongoID(rins)
-	if err != nil {
-		return nil, err
+	if col == "" {
+		return col, errors.New("model:" + t.String() + ",未设置collection")
 	}
-	return &mgo.DBRef{Collection: col, Id: id, Database: DbName}, nil
+	return col, nil
 }

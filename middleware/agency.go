@@ -10,6 +10,7 @@ import (
 
 //AgencyMiddleware 代理中间件
 func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
+	logger.Infoln("代理功能：开启")
 	return func(c *gin.Context) {
 		if strings.ToLower(c.Request.Method) == "options" {
 			c.AbortWithStatus(204)
@@ -19,15 +20,9 @@ func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
 			if c.Request.URL.RawQuery != "" {
 				target = target + "?" + c.Request.URL.RawQuery
 			}
-			logger.Infoln(c.Request.RequestURI, "->", target)
-			// t,_:=ioutil.ReadAll(c.Request.Body)
-			// logger.Infoln((string)(t))
+			logger.Infoln(c.Request.RequestURI, " -> ", target)
 			req, err := http.NewRequest(c.Request.Method, target, c.Request.Body)
 			req.Header = c.Request.Header
-			// req.Header.Del("Content-Type")
-			// req.Header.Add("Content-Type","application/x-www-form-urlencoded")
-			// logger.Infoln(c.Request.Header)
-			
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			if err != nil {
@@ -37,8 +32,6 @@ func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
 			}
 			defer resp.Body.Close()
 			body, _ := ioutil.ReadAll(resp.Body)
-			// logger.Infoln((string)(body))
-			// logger.Infoln(resp.Header)
 			for key, vals := range resp.Header {
 				if key == "Access-Control-Allow-Origin" ||
 					key == "Access-Control-Allow-Credentials" ||

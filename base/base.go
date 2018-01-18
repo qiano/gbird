@@ -8,10 +8,10 @@ import (
 )
 
 //ObjID 实体主键类型
-type ObjID bson.ObjectId
+type ObjID = bson.ObjectId
 
 //Context 上下文
-type Context struct{ gin.Context }
+type Context struct{ *gin.Context }
 
 //HandlerFunc 处理方法
 type HandlerFunc gin.HandlerFunc
@@ -43,7 +43,11 @@ type User struct {
 
 //CurUser 获取当前用户信息
 func (r *Context) CurUser() User {
-	ss := sessions.Get(&(r.Context))
+	var u User
+	ss := sessions.Get(r.Context)
 	user := ss.Get("user")
-	return user.(User)
+	if user != nil {
+		u = user.(User)
+	}
+	return u
 }

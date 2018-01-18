@@ -1,177 +1,82 @@
 package gbird
 
 import (
-	"encoding/json"
-	"errors"
 	"gbird/base"
+	"gbird/config"
 	"gbird/logger"
 	mw "gbird/middleware"
-	m "gbird/mongodb"
+	"gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"github.com/tommy351/gin-sessions"
-	"reflect"
-	"strconv"
+	"gopkg.in/mgo.v2"
 	"strings"
+	"time"
 )
 
 //App 应用实例
 type App struct {
 	*gin.Engine
+	Name string
 }
 
 //NewApp 创建实例
 func NewApp(name string) *App {
-
+	logger.Infoln("应用启动：" + name)
 	var store = sessions.NewCookieStore([]byte(name))
 	r := gin.Default()
 	r.Static("/assets", "./assets")
 	r.Use(sessions.Middleware(name+"session", store))
 	r.Use(mw.CORSMiddleware())
+	app := &App{Engine: r, Name: name}
+
 	r.POST("/", func(c *gin.Context) {
 		c.String(200, name+" module server")
 	})
-	return &App{Engine: r}
+	return app
 }
 
-//RegisterModel 模型注册
-func (r *App) RegisterModel(model interface{}, refmodel interface{}, routers ...*base.Router) {
-	rname, err := getRouterName(model)
+//Router 路由注册
+func (a *App) Router(method, path string, f func(*base.Context)) {
+	m := strings.ToUpper(method)
+	a.Engine.Handle(m, path, func(c *gin.Context) {
+		ctx := &base.Context{Context: c}
+		f(ctx)
+	})
+	logger.Infoln("路由注册：" + m + " " + path)
+}
+
+//ModelRouter 注册模型下的路由
+func (a *App) ModelRouter(robj interface{}, method, path string, f func(*base.Context)) {
+	rname, err := getRouterName(robj)
 	if err != nil {
 		panic(err)
 	}
-	soles := getSoles(model)
-	grp := r.Group("/api/" + rname)
-
-	grp.GET("/query", func(c *gin.Context) {
-		sort, _ := c.GetQuery("sort")
-		pageIndex, _ := c.GetQuery("page")
-		pageSize, _ := c.GetQuery("size")
-		cond, _ := c.GetQuery("cond")
-		idx, _ := strconv.Atoi(pageIndex)
-		if idx == 0 {
-			idx = 1
-		}
-		size, _ := strconv.Atoi(pageSize)
-		datas, total, err := m.Query(model, cond, idx, size, sort, false)
-		if err != nil {
-			c.JSON(200, gin.H{"code": 1, "error": err})
-		} else {
-			c.JSON(200, gin.H{"code": 0, "data": gin.H{
-				"list":  datas,
-				"total": total,
-				"page":  idx}})
-		}
+	grp := a.Group("/api/" + rname)
+	m := strings.ToUpper(method)
+	grp.Handle(m, path, func(c *gin.Context) {
+		ctx := &base.Context{Context: c}
+		f(ctx)
 	})
-	logger.Infoln("路由注册：GET" + " /api/" + rname + "/query")
-
-	grp.POST("/insert", func(c *gin.Context) {
-		data := c.PostForm("data")
-		objType := reflect.TypeOf(refmodel).Elem()
-		obj := reflect.New(objType).Interface()
-		json.Unmarshal([]byte(data), &obj)
-
-		temps := []string{}
-		for _, val := range soles {
-			field := reflect.ValueOf(obj).Elem().FieldByName(val)
-			v := field.Interface().(string)
-			temps = append(temps, `"`+strings.ToLower(val)+`":"`+v+`"`)
-		}
-		var exist string
-		if len(temps) > 0 {
-			exist = `{` + strings.Join(temps, ",") + `}`
-		}
-
-		if count, err := m.Count(model, exist, false); err == nil {
-			if count == 0 {
-				ss := sessions.Get(c)
-				user := ss.Get("user")
-				var u base.User
-				if user != nil {
-					u = user.(base.User)
-				}
-				err := m.Insert(model, obj, u)
-				if err != nil {
-					c.JSON(500, gin.H{"errmsg": err.Error()})
-				} else {
-					c.JSON(200, gin.H{"data": obj})
-				}
-			} else {
-				c.JSON(500, gin.H{"errmsg": "数据已存在，查询条件：" + exist})
-
-			}
-		}
-
-	})
-	logger.Infoln("路由注册：POST" + " /api/" + rname + "/insert")
-
-	grp.POST("/delete", func(c *gin.Context) {
-		data := c.PostForm("cond")
-		batch := c.PostForm("batch")
-		b, err := strconv.ParseBool(batch)
-		if err != nil {
-			b = false
-		}
-		ss := sessions.Get(c)
-		user := ss.Get("user")
-		var u base.User
-		if user != nil {
-			u = user.(base.User)
-		}
-		info, err := m.Remove(model, data, u, b)
-		if err != nil {
-			c.JSON(500, gin.H{"errmsg": err.Error(), "data": info})
-		} else {
-			c.JSON(200, gin.H{"data": info})
-		}
-	})
-	logger.Infoln("路由注册：POST" + " /api/" + rname + "/delete")
-
-	for _, router := range routers {
-		method := strings.ToUpper(router.Method)
-		grp.Handle(method, router.RelativePath, func(c *gin.Context) {
-			ctx := &base.Context{Context: *c}
-			router.HandlerFunc(ctx)
-		})
-		logger.Infoln("路由注册：" + method + " /api/" + rname + "/" + router.RelativePath)
-	}
-
+	logger.Infoln("路由注册：" + m + " /api/" + rname + path)
 }
 
-//RegisterRouter 路由注册
-func (r *App) RegisterRouter(routers ...*base.Router) {
-	for _, router := range routers {
-		method := strings.ToUpper(router.Method)
-		r.Handle(method, router.RelativePath, func(c *gin.Context) {
-			ctx := &base.Context{Context: *c}
-			router.HandlerFunc(ctx)
-		})
-		logger.Infoln("路由注册：" + method + " " + router.RelativePath)
+//UseMongodb 使用Mongo数据库
+func (a *App) UseMongodb() {
+	mongodbstr := config.Config["mongodbHost"]
+	mongodb.DbName = config.Config["mongodbDbName"]
+	if mongodbstr == "" {
+		logger.Infoln("未启用 Mongodb 数据库")
+		return
 	}
-}
+	globalMgoSession, err := mgo.DialWithTimeout(mongodbstr, 10*time.Second)
+	if err != nil {
+		logger.Errorln("Mongodb：", err)
+		panic(err)
+	}
+	logger.Infoln("Mondodb连接成功：" + mongodbstr + "  " + mongodb.DbName)
+	mongodb.GlobalMgoSession = globalMgoSession
+	mongodb.GlobalMgoSession.SetMode(mgo.Monotonic, true)
+	//default is 4096
+	mongodb.GlobalMgoSession.SetPoolLimit(300)
 
-func getRouterName(model interface{}) (string, error) {
-	col := ""
-	t := reflect.TypeOf(model)
-	for i := 0; i < t.NumField(); i++ {
-		col = t.Field(i).Tag.Get("uname")
-		if col != "" {
-			break
-		}
-	}
-	if col == "" {
-		return col, errors.New("model:" + t.String() + ",未设置路由名称")
-	}
-	return col, nil
-}
-
-func getSoles(model interface{}) []string {
-	soles := []string{}
-	t := reflect.TypeOf(model)
-	for i := 0; i < t.NumField(); i++ {
-		val := t.Field(i).Tag.Get("sole")
-		if val != "" && val == "true" {
-			soles = append(soles, t.Field(i).Name)
-		}
-	}
-	return soles
 }

@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
-	// "apihub/common/logger"
 	"encoding/json"
+	"fmt"
 	"gbird/base"
+	"gbird/logger"
+	"github.com/gin-gonic/gin"
 	"github.com/tommy351/gin-sessions"
 	"io/ioutil"
 	"net/http"
@@ -18,6 +18,7 @@ type wrapuser struct {
 
 //AuthMiddleware 权限中间件
 func AuthMiddleware(verifyURL string, needAuth func(string) bool) gin.HandlerFunc {
+	logger.Infoln("帐户权限验证：开启")
 	return func(c *gin.Context) {
 		if needAuth(c.Request.URL.Path) {
 			if token := c.Request.Header.Get("token"); token != "" {
