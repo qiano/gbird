@@ -2,8 +2,8 @@ package mongodb
 
 import (
 	"errors"
-	"gbird/base"
 	"gbird/auth"
+	"gbird/base"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
@@ -12,15 +12,19 @@ import (
 
 //GlobalMgoSession 全局mongo连接
 var GlobalMgoSession *mgo.Session
+
 //DbName 数据库名
 var DbName string
+
 //UseCol 使用Collection
 func UseCol(colname string, f func(c *mgo.Collection)) {
 	session := GlobalMgoSession.Clone()
 	defer session.Close()
 	col := session.DB(DbName).C(colname)
 	f(col)
+
 }
+
 //Insert 新增
 func Insert(robj interface{}, user auth.User) (err error) {
 	col, err := getCollection(robj)
@@ -71,22 +75,41 @@ func Query(robj interface{}, qjson string, page, pageSize int, sort string, cont
 	if err != nil {
 		return
 	}
+	if sort == "" {
+		sort = "-updatetime -createtime"
+	}
 	refobj := reflect.ValueOf(robj).Elem()
 	t := refobj.Type()
 	slice := reflect.MakeSlice(reflect.SliceOf(t), 0, 0)
 	temps := reflect.New(slice.Type())
 	temps.Elem().Set(slice)
 	UseCol(col, func(c *mgo.Collection) {
-		if sort == "" {
-			sort = "-updatetime -createtime"
-		}
 		qe := c.Find(qi).Sort(sort)
 		if total, err = qe.Count(); err != nil {
 			return
 		}
-		qe.Skip((page - 1) * pageSize).Limit(pageSize).All(temps.Interface())
+		if page == 0 {
+			qe.All(temps.Interface())
+		} else {
+			qe.Skip((page - 1) * pageSize).Limit(pageSize).All(temps.Interface())
+		}
 	})
 	return temps.Interface(), total, nil
+}
+
+//FindID ID查找
+func FindID(robj interface{}, id string) (interface{}, error) {
+	col, err := getCollection(robj)
+	if err != nil {
+		return nil, err
+	}
+	t := reflect.ValueOf(robj).Type()
+	temp := reflect.New(t).Interface()
+	UseCol(col, func(c *mgo.Collection) {
+		err = c.FindId(bson.ObjectIdHex(id)).One(temp)
+	})
+	return temp, err
+
 }
 
 //Update 更新单条记录
@@ -193,7 +216,7 @@ func getMongoID(robj interface{}) (bson.ObjectId, error) {
 			return (bson.ObjectId)(v), nil
 		}
 	}
-	return "", errors.New("模型：" + typeOfT.String() + ",未找到 bson: _id 设置")
+	return "", errors.New("模型：" + typeOfT.String() + ",未设置TAG： bson: _id 设置")
 }
 
 //GetCollection 获取模型对应的集合
@@ -208,7 +231,7 @@ func getCollection(robj interface{}) (string, error) {
 		}
 	}
 	if col == "" {
-		return col, errors.New("model:" + t.String() + ",未设置collection")
+		return col, errors.New("model:" + t.String() + ",未设置TAG:collection")
 	}
 	return col, nil
 }

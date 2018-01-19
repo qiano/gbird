@@ -1,0 +1,4 @@
+bson:"_id"            Mongodb主键ID
+collection:"colname"  Mondgodb 数据库模型文档名
+urlname:"urlname"     模型路由名
+sole:"true"           字段值唯一标识，在/api/model/insert中会按标识检测是否存在，如未设置不会在路由中检测重复插入

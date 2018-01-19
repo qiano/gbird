@@ -20,7 +20,7 @@ func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
 			if c.Request.URL.RawQuery != "" {
 				target = target + "?" + c.Request.URL.RawQuery
 			}
-			logger.Infoln(c.Request.RequestURI, " -> ", target)
+			logger.Infoln(c.Request.RequestURI, " --> ", target)
 			req, err := http.NewRequest(c.Request.Method, target, c.Request.Body)
 			req.Header = c.Request.Header
 			client := &http.Client{}

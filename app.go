@@ -1,13 +1,18 @@
 package gbird
 
 import (
+	"fmt"
 	"gbird/config"
 	"gbird/logger"
 	mw "gbird/middleware"
 	"gbird/mongodb"
+	"gbird/util"
 	"github.com/gin-gonic/gin"
 	"github.com/tommy351/gin-sessions"
 	"gopkg.in/mgo.v2"
+	"io"
+	"mime/multipart"
+	"os"
 	"strings"
 	"time"
 )
@@ -38,7 +43,7 @@ func NewApp(name string) *App {
 func (a *App) Router(method, path string, f func(*gin.Context)) {
 	m := strings.ToUpper(method)
 	a.Engine.Handle(m, path, f)
-	logger.Infoln("路由注册：" + m + " " + path)
+	// logger.Infoln("路由注册：" + m + " " + path)
 }
 
 //ModelRouter 注册模型下的路由
@@ -50,7 +55,7 @@ func (a *App) ModelRouter(robj interface{}, method, path string, f func(*gin.Con
 	grp := a.Group("/api/" + rname)
 	m := strings.ToUpper(method)
 	grp.Handle(m, path, f)
-	logger.Infoln("路由注册：" + m + " /api/" + rname + path)
+	// logger.Infoln("路由注册：" + m + " /api/" + rname + path)
 }
 
 //UseMongodb 使用Mongo数据库
@@ -74,4 +79,27 @@ func (a *App) UseMongodb() {
 
 }
 
+//SaveUploadedFile 保存上传的文件
+func SaveUploadedFile(file *multipart.FileHeader, flag string) (path string, err error) {
+	basedir := util.GetCurrDir()
+	savedir := "/assets/" + flag + "/"
+	if !util.IsExistFileOrDir(basedir + savedir) {
+		os.MkdirAll(basedir+savedir, 0777) //创建文件夹
+	}
+	tnow := fmt.Sprintf("%d", time.Now().UnixNano())
+	path = basedir + savedir + tnow + "_" + flag + "_" + file.Filename
+	src, err := file.Open()
+	if err != nil {
+		return
+	}
+	defer src.Close()
 
+	out, err := os.Create(path)
+	if err != nil {
+		return
+	}
+	defer out.Close()
+	io.Copy(out, src)
+
+	return
+}
