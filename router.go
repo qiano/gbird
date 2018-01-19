@@ -1,7 +1,6 @@
 package gbird
 
 import (
-	"fmt"
 	"encoding/json"
 	"errors"
 	"gbird/auth"
