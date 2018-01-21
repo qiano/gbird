@@ -2,11 +2,13 @@ package mongodb
 
 import (
 	"errors"
+	// "fmt"
 	"gbird/auth"
 	"gbird/base"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
+	"strconv"
 	"time"
 )
 
@@ -27,27 +29,21 @@ func UseCol(colname string, f func(c *mgo.Collection)) {
 
 //Insert 新增
 func Insert(robj interface{}, user auth.User) (err error) {
+	if ok, err := ModelValidation(robj); !ok {
+		return err
+	}
 	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
+	base.SetValue(robj, "ID", bson.NewObjectId())
+	base.SetValue(robj, "Base", base.Base{
+		Creater:    user.ID,
+		CreateTime: time.Now(),
+		Updater:    user.ID,
+		UpdateTime: time.Now(),
+	})
 	UseCol(col, func(c *mgo.Collection) {
-		refobj := reflect.ValueOf(robj).Elem()
-		typeOfT := refobj.Type()
-		for i := 0; i < refobj.NumField(); i++ {
-			bstr := typeOfT.Field(i).Tag.Get("bson")
-			if bstr == "_id" {
-				refobj.Field(i).Set(reflect.ValueOf(bson.NewObjectId()))
-			}
-			if v, ok := refobj.Field(i).Interface().(base.Base); ok {
-				temp := time.Now()
-				v.CreateTime = temp
-				v.UpdateTime = temp
-				v.Creater = user.ID
-				v.Updater = user.ID
-				refobj.Field(i).Set(reflect.ValueOf(v))
-			}
-		}
 		err = c.Insert(&robj)
 	})
 	return
@@ -66,12 +62,16 @@ func Remove(robj interface{}, qjson string, user auth.User, batch bool) (info *m
 }
 
 //Query 查询
-func Query(robj interface{}, qjson string, page, pageSize int, sort string, containsDeleted bool) (datas interface{}, total int, err error) {
+func Query(robj interface{}, qjson string, page, pageSize int, sort string, fields string, containsDeleted bool) (datas interface{}, total int, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
 	qi, err := toQueryBson(qjson, containsDeleted)
+	if err != nil {
+		return
+	}
+	fd, err := toBson(fields)
 	if err != nil {
 		return
 	}
@@ -84,7 +84,7 @@ func Query(robj interface{}, qjson string, page, pageSize int, sort string, cont
 	temps := reflect.New(slice.Type())
 	temps.Elem().Set(slice)
 	UseCol(col, func(c *mgo.Collection) {
-		qe := c.Find(qi).Sort(sort)
+		qe := c.Find(qi).Sort(sort).Select(fd)
 		if total, err = qe.Count(); err != nil {
 			return
 		}
@@ -112,7 +112,7 @@ func FindID(robj interface{}, id string) (interface{}, error) {
 
 }
 
-//Update 更新单条记录
+//Update 更新记录
 func Update(robj interface{}, qjson, ujson string, user auth.User, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
@@ -133,7 +133,6 @@ func Update(robj interface{}, qjson, ujson string, user auth.User, batch bool) (
 	UseCol(col, func(c *mgo.Collection) {
 		if batch {
 			if info, err = c.UpdateAll(q, up); err != nil {
-
 			}
 		} else {
 			if err = c.Update(q, up); err != nil {
@@ -221,17 +220,36 @@ func getMongoID(robj interface{}) (bson.ObjectId, error) {
 
 //GetCollection 获取模型对应的集合
 func getCollection(robj interface{}) (string, error) {
-	col := ""
+	tval, _, err := base.FindTag(robj, "collection", "")
+	return tval, err
+}
+
+//ModelValidation 模型验证
+func ModelValidation(robj interface{}) (bool, error) {
 	refobj := reflect.ValueOf(robj).Elem()
 	t := refobj.Type()
 	for i := 0; i < refobj.NumField(); i++ {
-		col = t.Field(i).Tag.Get("collection")
-		if col != "" {
-			break
+		def := t.Field(i).Tag.Get("default")
+		if def != "" {
+			if t.Field(i).Type.Kind() == reflect.Int && refobj.Field(i).Int() == 0 {
+				val, err := strconv.Atoi(def)
+				if err != nil {
+					return false, errors.New("model:" + t.String() + ",字段" + t.Field(i).Name + "，TAG:default,默认值设置异常")
+				}
+				refobj.Field(i).SetInt((int64)(val))
+			}
+			if t.Field(i).Type.Kind() == reflect.String && refobj.Field(i).String() == "" {
+				refobj.Field(i).SetString(def)
+			}
+		}
+		req := t.Field(i).Tag.Get("required")
+		if req == "true" {
+			if t.Field(i).Type.Kind() == reflect.Int && refobj.Field(i).Int() == 0 {
+				return false, errors.New("model:" + t.String() + ",字段" + t.Field(i).Name + "，TAG:required,值为空")
+			} else if t.Field(i).Type.Kind() == reflect.String && refobj.Field(i).String() == "" {
+				return false, errors.New("model:" + t.String() + ",字段" + t.Field(i).Name + "，TAG:required,值为空")
+			}
 		}
 	}
-	if col == "" {
-		return col, errors.New("model:" + t.String() + ",未设置TAG:collection")
-	}
-	return col, nil
+	return true, nil
 }

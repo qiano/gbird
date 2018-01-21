@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"gbird/auth"
+	"gbird/base"
 	"math"
 	// "gbird/logger"
 	m "gbird/mongodb"
@@ -15,15 +16,23 @@ import (
 )
 
 //Register 模型注册
-func (r *App) Register(robj interface{}) {
-	rname, err := getRouterName(robj)
+func (r *App) Register(robj interface{}, before func(c *gin.Context), after func(*gin.Context, interface{}, error) error) {
+	base.RegisterMetadata(robj)
+	rname, _, err := base.FindTag(robj, "urlname", "")
 	if err != nil {
 		panic(err)
 	}
-	soles := getSoles(robj)
+	soles, err := base.GetFieldsWithTag(robj, "sole")
+	if err != nil {
+		panic(err)
+	}
 	grp := r.Group("/api/" + rname)
 
+	//查询
 	grp.GET("/", func(c *gin.Context) {
+		if before != nil {
+			before(c)
+		}
 		r, _ := c.GetQuery("range")
 		if r == "" {
 			r = "page"
@@ -33,6 +42,7 @@ func (r *App) Register(robj interface{}) {
 			sort = "-updatetime -createtime"
 		}
 		cond, _ := c.GetQuery("cond")
+		fileds, _ := c.GetQuery("fields")
 		idx, size := 0, 0
 		if strings.ToLower(r) == "page" {
 			pageIndex, _ := c.GetQuery("page")
@@ -49,49 +59,42 @@ func (r *App) Register(robj interface{}) {
 			size = 1
 			idx = 1
 		}
-		datas, total, err := m.Query(robj, cond, idx, size, sort, false)
+		datas, total, err := m.Query(robj, cond, idx, size, sort, fileds, false)
 		tp := 0.0
 		if size != 0 {
 			tp = math.Ceil((float64)(total) / (float64)(size))
 		}
-		Ret(c, gin.H{
+
+		if after != nil {
+			err = after(c, &datas, err)
+		}
+		retData := gin.H{
 			"range":        r,
 			"sort":         sort,
 			"size":         size,
 			"list":         datas,
 			"totalrecords": total,
 			"totalpages":   tp,
-			"page":         idx}, err, 500)
-
-		// if err != nil {
-		// 	c.JSON(200, gin.H{"errcode": 500, "errmsg": err})
-		// } else {
-		// 	c.JSON(200, gin.H{"data": gin.H{
-		// 		"range":        r,
-		// 		"sort":         sort,
-		// 		"size":         size,
-		// 		"list":         datas,
-		// 		"totalrecords": total,
-		// 		"totalpages":   total / size,
-		// 		"page":         idx}})
-		// }
+			"page":         idx}
+		Ret(c, retData, err, 500)
 	})
-	// logger.Infoln("路由注册：GET" + "  /api/" + rname)
-
+	//ID查询
 	grp.GET("/id", func(c *gin.Context) {
+		if before != nil {
+			before(c)
+		}
 		val, _ := c.GetQuery("val")
 		data, err := m.FindID(robj, val)
+		if after != nil {
+			err = after(c, &data, err)
+		}
 		Ret(c, data, err, 500)
-		// if err != nil {
-		// 	c.JSON(200, gin.H{"errcode": 500, "errmsg": err})
-		// } else {
-		// 	c.JSON(200, gin.H{"code": 0, "data": data})
-		// }
 	})
-
-	// logger.Infoln("路由注册：GET" + "  /api/" + rname + "/:id")
-
+	//新增
 	grp.POST("/", func(c *gin.Context) {
+		if before != nil {
+			before(c)
+		}
 		body, _ := ioutil.ReadAll(c.Request.Body)
 		data := (string)(body)
 		objType := reflect.TypeOf(robj).Elem()
@@ -112,22 +115,24 @@ func (r *App) Register(robj interface{}) {
 			if count == 0 {
 				u := auth.CurUser(c)
 				err := m.Insert(obj, u)
+				if after != nil {
+					err = after(c, nil, err)
+				}
 				Ret(c, obj, err, 500)
-				// if err != nil {
-				// 	c.JSON(500, gin.H{"errmsg": err.Error()})
-				// } else {
-				// 	c.JSON(200, gin.H{"data": obj})
-				// }
 			} else {
+				if after != nil {
+					err = after(c, nil, err)
+				}
 				Ret(c, nil, errors.New("数据已存在，查询条件："+exist), 500)
-				// c.JSON(200, gin.H{"errmsg": "数据已存在，查询条件：" + exist})
 			}
 		}
 
 	})
-	// logger.Infoln("路由注册：POST" + " /api/" + rname + "/insert")
-
+	//修改
 	grp.PUT("/", func(c *gin.Context) {
+		if before != nil {
+			before(c)
+		}
 		cond := c.PostForm("cond")
 		doc := c.PostForm("doc")
 		multi := c.PostForm("multi")
@@ -137,16 +142,16 @@ func (r *App) Register(robj interface{}) {
 		}
 		user := auth.CurUser(c)
 		info, err := m.Update(robj, cond, doc, user, b)
+		if after != nil {
+			err = after(c, info, err)
+		}
 		Ret(c, info, err, 500)
-		// if err != nil {
-		// 	c.JSON(500, gin.H{"errmsg": err.Error()})
-		// } else {
-		// 	c.JSON(200, gin.H{"data": info})
-		// }
 	})
-	// logger.Infoln("路由注册：PUT" + " /api/" + rname)
-
+	//删除
 	grp.DELETE("/", func(c *gin.Context) {
+		if before != nil {
+			before(c)
+		}
 		cond := c.PostForm("cond")
 		multi := c.PostForm("multi")
 		b, err := strconv.ParseBool(multi)
@@ -155,66 +160,18 @@ func (r *App) Register(robj interface{}) {
 		}
 		user := auth.CurUser(c)
 		info, err := m.Remove(robj, cond, user, b)
+		if after != nil {
+			err = after(c, info, err)
+		}
 		Ret(c, info, err, 500)
-		// if err != nil {
-		// 	c.JSON(500, gin.H{"errmsg": err.Error(), "data": info})
-		// } else {
-		// 	c.JSON(200, gin.H{"data": info})
-		// }
 	})
-	// logger.Infoln("路由注册：DELETE" + " /api/" + rname)
-
-}
-
-func getRouterName(robj interface{}) (string, error) {
-	col := ""
-	refobj := reflect.ValueOf(robj).Elem()
-	t := refobj.Type()
-	for i := 0; i < refobj.NumField(); i++ {
-		col = t.Field(i).Tag.Get("urlname")
-		if col != "" {
-			break
-		}
-	}
-	if col == "" {
-		return col, errors.New("model:" + t.String() + ",未设置路由名称")
-	}
-
-	return col, nil
-}
-
-func getSoles(robj interface{}) []string {
-	soles := []string{}
-	refobj := reflect.ValueOf(robj).Elem()
-	t := refobj.Type()
-	for i := 0; i < refobj.NumField(); i++ {
-		val := t.Field(i).Tag.Get("sole")
-		if val != "" && val == "true" {
-			soles = append(soles, t.Field(i).Name)
-		}
-	}
-	return soles
 }
 
 //Ret 返回值
 func Ret(c *gin.Context, data interface{}, err error, code int) {
 	if err != nil {
-		c.JSON(200, gin.H{"errcode": code, "errmsg": err})
+		c.JSON(200, gin.H{"errcode": code, "errmsg": err.Error()})
 	} else {
 		c.JSON(200, gin.H{"data": data})
 	}
-}
-
-//ToSlice to slice
-func ToSlice(arr interface{}) []interface{} {
-	v := reflect.ValueOf(arr)
-	if v.Kind() != reflect.Slice {
-		panic("toslice arr not slice")
-	}
-	l := v.Len()
-	ret := make([]interface{}, l)
-	for i := 0; i < l; i++ {
-		ret[i] = v.Index(i).Interface()
-	}
-	return ret
 }

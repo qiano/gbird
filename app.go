@@ -2,6 +2,7 @@ package gbird
 
 import (
 	"fmt"
+	"gbird/base"
 	"gbird/config"
 	"gbird/logger"
 	mw "gbird/middleware"
@@ -29,12 +30,21 @@ func NewApp(name string) *App {
 	var store = sessions.NewCookieStore([]byte(name))
 	r := gin.Default()
 	r.Static("/assets", "./assets")
+	r.Static("/doc", "./doc")
 	r.Use(sessions.Middleware(name+"session", store))
 	r.Use(mw.CORSMiddleware())
 	app := &App{Engine: r, Name: name}
 
 	r.POST("/", func(c *gin.Context) {
 		c.String(200, name+" module server")
+	})
+	r.GET("/api/metadata", func(c *gin.Context) {
+		model, _ := c.GetQuery("model")
+		if model != "" {
+			Ret(c, base.Metadatas[model], nil, 0)
+		} else {
+			Ret(c, base.Metadatas, nil, 0)
+		}
 	})
 	return app
 }
@@ -48,7 +58,7 @@ func (a *App) Router(method, path string, f func(*gin.Context)) {
 
 //ModelRouter 注册模型下的路由
 func (a *App) ModelRouter(robj interface{}, method, path string, f func(*gin.Context)) {
-	rname, err := getRouterName(robj)
+	rname, _, err := base.FindTag(robj, "urlname", "")
 	if err != nil {
 		panic(err)
 	}

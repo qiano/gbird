@@ -140,9 +140,8 @@ func corePrintf(ty logType, format string, args ...interface{}) {
 	new(file).Printf(format, aa...)
 
 	if config.Config["logconsole"] == "1" {
-		as := []interface{}{time.Now().Format("2006/01/02 15:04:05"), "[" + ty.Tag + "]"}
-		as = append(as, args...)
-		lg := fmt.Sprintf("\x1b[%dm%s\x1b[0m", ty.Color, fmt.Sprintf(format, as...))
+		format=time.Now().Format("2006/01/02 15:04:05")+" [" + ty.Tag + "] "+format
+		lg := fmt.Sprintf("\x1b[%dm%s\x1b[0m", ty.Color, fmt.Sprintf(format, args...))
 		fmt.Println(lg)
 	}
 }
