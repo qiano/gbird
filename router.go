@@ -2,14 +2,12 @@ package gbird
 
 import (
 	"encoding/json"
-	"errors"
 	"gbird/auth"
 	"gbird/base"
-	"math"
-	// "gbird/logger"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
+	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -22,10 +20,7 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context), after func
 	if err != nil {
 		panic(err)
 	}
-	soles, err := base.GetFieldsWithTag(robj, "sole")
-	if err != nil {
-		panic(err)
-	}
+
 	grp := r.Group("/api/" + rname)
 
 	//查询
@@ -101,32 +96,12 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context), after func
 		obj := reflect.New(objType).Interface()
 		json.Unmarshal([]byte(data), &obj)
 
-		temps := []string{}
-		for _, val := range soles {
-			field := reflect.ValueOf(obj).Elem().FieldByName(val)
-			v := field.Interface().(string)
-			temps = append(temps, `"`+strings.ToLower(val)+`":"`+v+`"`)
+		u := auth.CurUser(c)
+		err := m.Insert(obj, u)
+		if after != nil {
+			err = after(c, nil, err)
 		}
-		var exist string
-		if len(temps) > 0 {
-			exist = `{` + strings.Join(temps, ",") + `}`
-		}
-		if count, err := m.Count(robj, exist, false); err == nil {
-			if count == 0 {
-				u := auth.CurUser(c)
-				err := m.Insert(obj, u)
-				if after != nil {
-					err = after(c, nil, err)
-				}
-				Ret(c, obj, err, 500)
-			} else {
-				if after != nil {
-					err = after(c, nil, err)
-				}
-				Ret(c, nil, errors.New("数据已存在，查询条件："+exist), 500)
-			}
-		}
-
+		Ret(c, obj, err, 500)
 	})
 	//修改
 	grp.PUT("/", func(c *gin.Context) {

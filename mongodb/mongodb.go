@@ -9,6 +9,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -226,6 +227,7 @@ func getCollection(robj interface{}) (string, error) {
 
 //ModelValidation 模型验证
 func ModelValidation(robj interface{}) (bool, error) {
+	//结构验证
 	refobj := reflect.ValueOf(robj).Elem()
 	t := refobj.Type()
 	for i := 0; i < refobj.NumField(); i++ {
@@ -249,6 +251,27 @@ func ModelValidation(robj interface{}) (bool, error) {
 			} else if t.Field(i).Type.Kind() == reflect.String && refobj.Field(i).String() == "" {
 				return false, errors.New("model:" + t.String() + ",字段" + t.Field(i).Name + "，TAG:required,值为空")
 			}
+		}
+	}
+
+	//唯一性验证
+	soles, err := base.GetFieldsWithTag(robj, "sole")
+	if err != nil {
+		panic(err)
+	}
+	if len(soles) > 0 {
+		temps := []string{}
+		for _, val := range soles {
+			field := reflect.ValueOf(robj).Elem().FieldByName(val)
+			v := field.Interface().(string)
+			temps = append(temps, `"`+strings.ToLower(val)+`":"`+v+`"`)
+		}
+		var exist string
+		if len(temps) > 0 {
+			exist = `{` + strings.Join(temps, ",") + `}`
+		}
+		if count, err := Count(robj, exist, false); err == nil && count > 0 {
+			return false, errors.New("数据已存在，查询条件：" + exist)
 		}
 	}
 	return true, nil
