@@ -255,23 +255,30 @@ func ModelValidation(robj interface{}) (bool, error) {
 	}
 
 	//唯一性验证
-	soles, err := base.GetFieldsWithTag(robj, "sole")
+	soles, _, err := base.FindTag(robj, "sole", "")
 	if err != nil {
 		panic(err)
 	}
 	if len(soles) > 0 {
-		temps := []string{}
-		for _, val := range soles {
-			field := reflect.ValueOf(robj).Elem().FieldByName(val)
-			v := field.Interface().(string)
-			temps = append(temps, `"`+strings.ToLower(val)+`":"`+v+`"`)
+		exists := []string{}
+		groups := strings.Split(soles, "|")
+		for _, g := range groups {
+			temps := []string{}
+			for _, val := range strings.Split(g, ",") {
+				field := reflect.ValueOf(robj).Elem().FieldByName(val)
+				v := field.Interface().(string)
+				temps = append(temps, `"`+strings.ToLower(val)+`":"`+v+`"`)
+			}
+			if len(temps) > 0 {
+				exists = append(exists, `{`+strings.Join(temps, ",")+`}`)
+			}
 		}
-		var exist string
-		if len(temps) > 0 {
-			exist = `{` + strings.Join(temps, ",") + `}`
+		qjson := exists[0]
+		if len(exists) > 1 {
+			qjson = `{"$or":[` + strings.Join(exists, ",") + `]}`
 		}
-		if count, err := Count(robj, exist, false); err == nil && count > 0 {
-			return false, errors.New("数据已存在，查询条件：" + exist)
+		if count, err := Count(robj, qjson, false); err == nil && count > 0 {
+			return false, errors.New("数据已存在，查询条件：" + qjson)
 		}
 	}
 	return true, nil
