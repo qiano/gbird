@@ -2,8 +2,8 @@ package apilog
 
 import (
 	"bytes"
-	"gbird/base"
 	"gbird/auth"
+	"gbird/base"
 	"gbird/logger"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
@@ -29,8 +29,8 @@ type APILog struct {
 	base.Base
 }
 
-//APILogMiddleware API日志中间件
-func APILogMiddleware(getDesc func(string) string) gin.HandlerFunc {
+//Middleware API日志中间件
+func Middleware(getDesc func(string) string) gin.HandlerFunc {
 	logger.Infoln("API日志：开启")
 	return func(c *gin.Context) {
 		rbody, _ := ioutil.ReadAll(c.Request.Body)
@@ -48,10 +48,13 @@ func APILogMiddleware(getDesc func(string) string) gin.HandlerFunc {
 			IP:                c.ClientIP(),
 			QueryStringParams: c.Request.URL.RawQuery,
 			RequestDesc:       desc}
-		user := auth.CurUser(c)
-		log.UserID = user.ID
-		log.UserName = user.UserName
-		m.Insert(log, user)
+		var id string
+		if auth.GetCurUserIDName != nil {
+			id, name := auth.GetCurUserIDName(c)
+			log.UserID = id
+			log.UserName = name
+		}
+		m.Insert(log, id)
 		c.Next()
 	}
 }

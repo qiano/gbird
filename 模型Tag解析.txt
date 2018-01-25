@@ -6,3 +6,4 @@ required:"true"       必填字段，新增和更新时不能为空，int,string
 default:"val"         默认值,   int,string 设置有效，其它类型无效
 display:"name"        显示名称
 desc:"content"        描述
+ref:"collection"      用于引用字段 dbref

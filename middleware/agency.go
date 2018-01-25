@@ -9,18 +9,18 @@ import (
 )
 
 //AgencyMiddleware 代理中间件
-func AgencyMiddleware(getMap func(string) string) gin.HandlerFunc {
+func AgencyMiddleware(getMap func(*gin.Context) string) gin.HandlerFunc {
 	logger.Infoln("代理功能：开启")
 	return func(c *gin.Context) {
 		if strings.ToLower(c.Request.Method) == "options" {
 			c.AbortWithStatus(204)
 			return
 		}
-		if target := getMap(c.Request.URL.Path); len(target) > 0 {
+		if target := getMap(c); len(target) > 0 {
 			if c.Request.URL.RawQuery != "" {
-				target = target + "?" + c.Request.URL.RawQuery
+				target =  target + "?" + c.Request.URL.RawQuery
 			}
-			logger.Infoln(c.Request.RequestURI, " --> ", target)
+			logger.Infoln(c.Request.Method+" "+c.Request.RequestURI, " --> ", target)
 			req, err := http.NewRequest(c.Request.Method, target, c.Request.Body)
 			req.Header = c.Request.Header
 			client := &http.Client{}

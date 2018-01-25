@@ -2,8 +2,6 @@ package mongodb
 
 import (
 	"errors"
-	// "fmt"
-	"gbird/auth"
 	"gbird/base"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -29,7 +27,7 @@ func UseCol(colname string, f func(c *mgo.Collection)) {
 }
 
 //Insert 新增
-func Insert(robj interface{}, user auth.User) (err error) {
+func Insert(robj interface{}, userid string) (err error) {
 	if ok, err := ModelValidation(robj); !ok {
 		return err
 	}
@@ -37,11 +35,30 @@ func Insert(robj interface{}, user auth.User) (err error) {
 	if err != nil {
 		return
 	}
+	//引用关系处理
+	fs, err := base.GetFieldsWithTag(robj, "ref")
+	if err != nil {
+		return
+	}
+	for _, f := range fs {
+		_, val := base.GetValue(robj, f)
+		ref := val.(mgo.DBRef)
+		id := ref.Id.(string)
+		c, er := base.GetTag(robj, f, "ref")
+		if er != nil {
+			return er
+		}
+		ref.Id = bson.ObjectIdHex(id)
+		ref.Collection = c
+		ref.Database = DbName
+		base.SetValue(robj, f, ref)
+	}
+
 	base.SetValue(robj, "ID", bson.NewObjectId())
 	base.SetValue(robj, "Base", base.Base{
-		Creater:    user.ID,
+		Creater:    userid,
 		CreateTime: time.Now(),
-		Updater:    user.ID,
+		Updater:    userid,
 		UpdateTime: time.Now(),
 	})
 	UseCol(col, func(c *mgo.Collection) {
@@ -51,13 +68,13 @@ func Insert(robj interface{}, user auth.User) (err error) {
 }
 
 //Remove 删除
-func Remove(robj interface{}, qjson string, user auth.User, batch bool) (info *mgo.ChangeInfo, err error) {
+func Remove(robj interface{}, qjson string, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
 	UseCol(col, func(c *mgo.Collection) {
-		info, err = Update(robj, qjson, `{"base.isdelete":"true"}`, user, batch)
+		info, err = Update(robj, qjson, `{"base.isdelete":"true"}`, userid, batch)
 	})
 	return
 }
@@ -99,22 +116,22 @@ func Query(robj interface{}, qjson string, page, pageSize int, sort string, fiel
 }
 
 //FindID ID查找
-func FindID(robj interface{}, id string) (interface{}, error) {
+func FindID(robj interface{}, id bson.ObjectId) (interface{}, error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return nil, err
 	}
-	t := reflect.ValueOf(robj).Type()
+	t := reflect.ValueOf(robj).Elem().Type()
 	temp := reflect.New(t).Interface()
 	UseCol(col, func(c *mgo.Collection) {
-		err = c.FindId(bson.ObjectIdHex(id)).One(temp)
+		err = c.FindId(id).One(temp)
 	})
 	return temp, err
 
 }
 
 //Update 更新记录
-func Update(robj interface{}, qjson, ujson string, user auth.User, batch bool) (info *mgo.ChangeInfo, err error) {
+func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return
@@ -130,7 +147,7 @@ func Update(robj interface{}, qjson, ujson string, user auth.User, batch bool) (
 	up := bson.M{"$set": u}
 	temp := up["$set"].(bson.M)
 	temp["base.updatetime"] = time.Now()
-	temp["base.updater"] = user.ID
+	temp["base.updater"] = userid
 	UseCol(col, func(c *mgo.Collection) {
 		if batch {
 			if info, err = c.UpdateAll(q, up); err != nil {
@@ -173,6 +190,16 @@ func DBRef(robj interface{}) (ref *mgo.DBRef, err error) {
 		return nil, err
 	}
 	return &mgo.DBRef{Collection: col, Id: id, Database: DbName}, nil
+}
+
+//FindRef 查找关联实体
+func FindRef(robj interface{}, ref *mgo.DBRef) (interface{}, error) {
+	session := GlobalMgoSession.Clone()
+	defer session.Close()
+	t := reflect.ValueOf(robj).Elem().Type()
+	temp := reflect.New(t).Interface()
+	err := session.DB(DbName).FindRef(ref).One(temp)
+	return temp, err
 }
 
 func toBson(json string) (bson.M, error) {
@@ -246,9 +273,8 @@ func ModelValidation(robj interface{}) (bool, error) {
 		}
 		req := t.Field(i).Tag.Get("required")
 		if req == "true" {
-			if t.Field(i).Type.Kind() == reflect.Int && refobj.Field(i).Int() == 0 {
-				return false, errors.New("model:" + t.String() + ",字段" + t.Field(i).Name + "，TAG:required,值为空")
-			} else if t.Field(i).Type.Kind() == reflect.String && refobj.Field(i).String() == "" {
+			val, o := base.GetValue(robj, t.Field(i).Name)
+			if val == "" && o == nil {
 				return false, errors.New("model:" + t.String() + ",字段" + t.Field(i).Name + "，TAG:required,值为空")
 			}
 		}
@@ -265,9 +291,10 @@ func ModelValidation(robj interface{}) (bool, error) {
 		for _, g := range groups {
 			temps := []string{}
 			for _, val := range strings.Split(g, ",") {
-				field := reflect.ValueOf(robj).Elem().FieldByName(val)
-				v := field.Interface().(string)
-				temps = append(temps, `"`+strings.ToLower(val)+`":"`+v+`"`)
+				v, _ := base.GetValue(robj, val)
+				if v != "" {
+					temps = append(temps, `"`+strings.ToLower(val)+`":"`+v+`"`)
+				}
 			}
 			if len(temps) > 0 {
 				exists = append(exists, `{`+strings.Join(temps, ",")+`}`)

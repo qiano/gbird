@@ -35,7 +35,7 @@ func NewApp(name string) *App {
 	r.Use(mw.CORSMiddleware())
 	app := &App{Engine: r, Name: name}
 
-	r.POST("/", func(c *gin.Context) {
+	r.GET("/", func(c *gin.Context) {
 		c.String(200, name+" module server")
 	})
 	r.GET("/api/metadata", func(c *gin.Context) {

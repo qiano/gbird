@@ -2,19 +2,21 @@ package base
 
 import (
 	"errors"
+	"fmt"
 	"gbird/logger"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
 
 //Base 模型基础字段
 type Base struct {
-	Creater    string    //创建人
-	CreateTime time.Time //创建时间
-	Updater    string    //创建人
-	UpdateTime time.Time //创建时间
-	IsDelete   bool      //是否已删除
+	Creater    string //创建人
+	CreateTime time.Time     //创建时间
+	Updater    string //创建人
+	UpdateTime time.Time     //创建时间
+	IsDelete   bool          //是否已删除
 }
 
 //Metadatas 模型元数据
@@ -35,7 +37,7 @@ func init() {
 //RegisterMetadata 将模型注册到源数据信息中
 func RegisterMetadata(robj interface{}) {
 	fields := make(map[string]FieldInfo)
-	tags := []string{"bson", "collection", "urlname", "sole", "required", "default", "desc", "display"}
+	tags := []string{"bson", "collection", "urlname", "sole", "required", "default", "desc", "display", "ref"}
 	refobj := reflect.ValueOf(robj).Elem()
 	t := refobj.Type()
 	for i := 0; i < refobj.NumField(); i++ {
@@ -149,4 +151,25 @@ func SetValue(robj interface{}, field string, val interface{}) {
 	refobj := reflect.ValueOf(robj).Elem()
 	f := refobj.FieldByName(field)
 	f.Set(reflect.ValueOf(val))
+}
+
+//GetValue 获取值
+func GetValue(robj interface{}, field string) (string, interface{}) {
+	refobj := reflect.ValueOf(robj).Elem()
+	f := refobj.FieldByName(field)
+	k := f.Kind()
+	if k == reflect.Int || k == reflect.Int16 || k == reflect.Int32 || k == reflect.Int64 || k == reflect.Int8 {
+		v := f.Int()
+		if v == 0 {
+			return "", nil
+		}
+		return strconv.Itoa((int)(v)), nil
+	} else if k == reflect.String {
+		return f.String(), nil
+	} else if k == reflect.Float64 || k == reflect.Float32 {
+		return fmt.Sprintf("%.6f", f.Float()), nil
+	} else if k == reflect.Struct {
+		return "", f.Interface()
+	}
+	return "", nil
 }

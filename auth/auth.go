@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+//GetCurUserIDName 获取当前用户ID和名称
+var GetCurUserIDName func(*gin.Context) (string, string)
+
 //User 用户
 type User struct {
 	ID       string `json:"_id"`
@@ -31,11 +34,12 @@ func CurUser(r *gin.Context) User {
 	return u
 }
 
-//AuthMiddleware 权限中间件
-func AuthMiddleware(verifyURL string, needAuth func(string) bool) gin.HandlerFunc {
+//Middleware 权限中间件
+func Middleware(verifyURL string, needAuth func(*gin.Context) bool) gin.HandlerFunc {
 	logger.Infoln("帐户权限验证：开启")
 	return func(c *gin.Context) {
-		if needAuth(c.Request.URL.Path) {
+		cip := c.ClientIP()
+		if cip != "127.0.0.1" && needAuth(c) {
 			if token := c.Request.Header.Get("token"); token != "" {
 				res, err := http.Get(verifyURL + "?token=" + token)
 				if err != nil {
