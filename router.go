@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"gbird/auth"
 	"gbird/base"
+	"gbird/logger"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
@@ -15,11 +16,12 @@ import (
 )
 
 //Register 模型注册
-func (r *App) Register(robj interface{}, before func(c *gin.Context, data interface{}) error, after func(*gin.Context, interface{}, error) error) {
+func (r *App) Register(robj interface{}, before func(c *gin.Context, data interface{}) error, after func(*gin.Context, *gin.H, error) error) {
 	base.RegisterMetadata(robj)
 	rname, _, err := base.FindTag(robj, "urlname", "")
 	if err != nil {
-		panic(err)
+		logger.Errorln(err)
+		return
 	}
 
 	grp := r.Group("/api/" + rname)
@@ -61,17 +63,18 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 			tp = math.Ceil((float64)(total) / (float64)(size))
 		}
 
-		if after != nil {
-			err = after(c, &datas, err)
-		}
-		retData := gin.H{
+		retData := gin.H{"data": gin.H{
 			"range":        r,
 			"sort":         sort,
 			"size":         size,
 			"list":         datas,
 			"totalrecords": total,
 			"totalpages":   tp,
-			"page":         idx}
+			"page":         idx}}
+
+		if after != nil {
+			err = after(c, &retData, err)
+		}
 		Ret(c, retData, err, 500)
 	})
 	//ID查询
@@ -85,10 +88,11 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 			}
 		}
 		data, err := m.FindID(robj, bson.ObjectIdHex(val))
+		retdata := gin.H{"data": data}
 		if after != nil {
-			err = after(c, &data, err)
+			err = after(c, &retdata, err)
 		}
-		Ret(c, data, err, 500)
+		Ret(c, retdata, err, 500)
 	})
 	//新增
 	grp.POST("", func(c *gin.Context) {
@@ -99,7 +103,7 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 		json.Unmarshal([]byte(data), &obj)
 		var uid string
 		if auth.GetCurUserIDName != nil {
-			uid,_ = auth.GetCurUserIDName(c)
+			uid, _ = auth.GetCurUserIDName(c)
 		}
 		if before != nil {
 			err := before(c, obj)
@@ -110,10 +114,11 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 		}
 		err := m.Insert(obj, uid)
 
+		retdata := gin.H{"data": obj}
 		if after != nil {
-			err = after(c, nil, err)
+			err = after(c, &retdata, err)
 		}
-		Ret(c, obj, err, 500)
+		Ret(c, retdata, err, 500)
 	})
 	//修改
 	grp.PUT("", func(c *gin.Context) {
@@ -126,7 +131,7 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 		}
 		var uid string
 		if auth.GetCurUserIDName != nil {
-			uid,_ = auth.GetCurUserIDName(c)
+			uid, _ = auth.GetCurUserIDName(c)
 		}
 		if before != nil {
 			err := before(c, nil)
@@ -136,10 +141,11 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 			}
 		}
 		info, err := m.Update(robj, cond, doc, uid, b)
+		retdata := gin.H{"data": info}
 		if after != nil {
-			err = after(c, info, err)
+			err = after(c, &retdata, err)
 		}
-		Ret(c, info, err, 500)
+		Ret(c, retdata, err, 500)
 	})
 	//删除
 	grp.DELETE("", func(c *gin.Context) {
@@ -151,28 +157,29 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 		}
 		var uid string
 		if auth.GetCurUserIDName != nil {
-			uid,_ = auth.GetCurUserIDName(c)
+			uid, _ = auth.GetCurUserIDName(c)
 		}
 		if before != nil {
-			err:=before(c, nil)
+			err := before(c, nil)
 			if err != nil {
 				Ret(c, nil, err, 500)
 				return
 			}
 		}
 		info, err := m.Remove(robj, cond, uid, b)
+		retdata := gin.H{"data": info}
 		if after != nil {
-			err = after(c, info, err)
+			err = after(c, &retdata, err)
 		}
-		Ret(c, info, err, 500)
+		Ret(c, retdata, err, 500)
 	})
 }
 
 //Ret 返回值
-func Ret(c *gin.Context, data interface{}, err error, code int) {
+func Ret(c *gin.Context, data gin.H, err error, code int) {
 	if err != nil {
 		c.JSON(200, gin.H{"errcode": code, "errmsg": err.Error()})
 	} else {
-		c.JSON(200, gin.H{"data": data})
+		c.JSON(200, data)
 	}
 }

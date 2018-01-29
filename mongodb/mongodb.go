@@ -130,6 +130,19 @@ func FindID(robj interface{}, id bson.ObjectId) (interface{}, error) {
 
 }
 
+//FindOne 查找一个
+func FindOne(robj interface{}, qjson, sort string) (interface{}, error) {
+	data, total, err := Query(robj, qjson, 1, 1, "", sort, false)
+	if err != nil {
+		return nil, err
+	}
+	if total == 0 {
+		return nil, errors.New("一个都没有")
+	}
+	arr := base.ToSlice(data)
+	return arr[0], nil
+}
+
 //Update 更新记录
 func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(robj)
@@ -157,6 +170,22 @@ func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (i
 				info.Updated = 1
 			}
 		}
+	})
+	return
+}
+
+//UpdateID 更新
+func UpdateID(robj interface{}, id bson.ObjectId, data bson.M, userid string) (err error) {
+	col, err := getCollection(robj)
+	if err != nil {
+		return
+	}
+	d := bson.M{"$set": data}
+	temp := d["$set"].(bson.M)
+	temp["base.updatetime"] = time.Now()
+	temp["base.updater"] = userid
+	UseCol(col, func(c *mgo.Collection) {
+		err = c.UpdateId(id, d)
 	})
 	return
 }

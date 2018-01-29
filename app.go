@@ -41,9 +41,9 @@ func NewApp(name string) *App {
 	r.GET("/api/metadata", func(c *gin.Context) {
 		model, _ := c.GetQuery("model")
 		if model != "" {
-			Ret(c, base.Metadatas[model], nil, 0)
+			Ret(c, gin.H{"data": base.Metadatas[model]}, nil, 0)
 		} else {
-			Ret(c, base.Metadatas, nil, 0)
+			Ret(c, gin.H{"data": base.Metadatas}, nil, 0)
 		}
 	})
 	return app
