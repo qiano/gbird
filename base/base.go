@@ -12,11 +12,11 @@ import (
 
 //Base 模型基础字段
 type Base struct {
-	Creater    string //创建人
-	CreateTime time.Time     //创建时间
-	Updater    string //创建人
-	UpdateTime time.Time     //创建时间
-	IsDelete   bool          //是否已删除
+	Creater    string    //创建人
+	CreateTime time.Time //创建时间
+	Updater    string    //创建人
+	UpdateTime time.Time //创建时间
+	IsDelete   bool      //是否已删除
 }
 
 //Metadatas 模型元数据
@@ -135,6 +135,9 @@ func GetFieldsWithTag(robj interface{}, tag string) (fs []string, err error) {
 //ToSlice to slice
 func ToSlice(arr interface{}) []interface{} {
 	v := reflect.ValueOf(arr)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
 	if v.Kind() != reflect.Slice {
 		panic("toslice arr not slice")
 	}

@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"fmt"
 	"errors"
 	"gbird/base"
 	"gopkg.in/mgo.v2"
@@ -141,6 +142,20 @@ func FindOne(robj interface{}, qjson, sort string) (interface{}, error) {
 	}
 	arr := base.ToSlice(data)
 	return arr[0], nil
+}
+
+//FindAll 查找所有
+func FindAll(robj interface{}, qjson, sort string) ([]interface{}, error) {
+	data, total, err := Query(robj, qjson, 0, 0, "", sort, false)
+	if err != nil {
+		return nil, err
+	}
+	if total == 0 {
+		return nil, errors.New("一个都没有")
+	}
+	fmt.Println(data)
+	arr := base.ToSlice(data)
+	return arr, nil
 }
 
 //Update 更新记录
@@ -334,7 +349,7 @@ func ModelValidation(robj interface{}) (bool, error) {
 			qjson = `{"$or":[` + strings.Join(exists, ",") + `]}`
 		}
 		if count, err := Count(robj, qjson, false); err == nil && count > 0 {
-			return false, errors.New("数据已存在，查询条件：" + qjson)
+			return false, errors.New("数据已存���，查询条件：" + qjson)
 		}
 	}
 	return true, nil
