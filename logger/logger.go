@@ -118,14 +118,14 @@ func Fatalln(args ...interface{}) {
 
 //Debugf f
 func Debugf(format string, args ...interface{}) {
-	if config.Config["debug"] == "1" {
+	if config.Config["debug"] == "true" {
 		corePrintf(logTypes["debug"], format, args...)
 	}
 }
 
 //Debugln ln
 func Debugln(args ...interface{}) {
-	if config.Config["debug"] == "1" {
+	if config.Config["debug"] == "true" {
 		corePrintln(logTypes["debug"], args...)
 	}
 }

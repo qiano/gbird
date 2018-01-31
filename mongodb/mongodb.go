@@ -1,7 +1,6 @@
 package mongodb
 
 import (
-	"fmt"
 	"errors"
 	"gbird/base"
 	"gopkg.in/mgo.v2"
@@ -153,7 +152,6 @@ func FindAll(robj interface{}, qjson, sort string) ([]interface{}, error) {
 	if total == 0 {
 		return nil, errors.New("一个都没有")
 	}
-	fmt.Println(data)
 	arr := base.ToSlice(data)
 	return arr, nil
 }
