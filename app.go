@@ -34,7 +34,6 @@ func NewApp(name string) *App {
 	r.Use(sessions.Middleware(name+"session", store))
 	r.Use(mw.CORSMiddleware())
 	app := &App{Engine: r, Name: name}
-
 	r.GET("/", func(c *gin.Context) {
 		c.String(200, name+" module server")
 	})

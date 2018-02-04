@@ -48,13 +48,14 @@ func Middleware(getDesc func(string) string) gin.HandlerFunc {
 			IP:                c.ClientIP(),
 			QueryStringParams: c.Request.URL.RawQuery,
 			RequestDesc:       desc}
-		var id string
-		if auth.GetCurUserIDName != nil {
-			id, name := auth.GetCurUserIDName(c)
-			log.UserID = id
-			log.UserName = name
+		var uid string
+		user, err := auth.GetCurUser(c)
+		if err == nil {
+			uid = user.UserID()
+			log.UserID = user.UserID()
+			log.UserName = user.DisplayName()
 		}
-		m.Insert(log, id)
+		m.Insert(log, uid)
 		c.Next()
 	}
 }

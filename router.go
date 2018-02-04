@@ -102,8 +102,11 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 		obj := reflect.New(objType).Interface()
 		json.Unmarshal([]byte(data), &obj)
 		var uid string
-		if auth.GetCurUserIDName != nil {
-			uid, _ = auth.GetCurUserIDName(c)
+		if auth.GetCurUser != nil {
+			user, err := auth.GetCurUser(c)
+			if err == nil {
+				uid = user.UserID()
+			}
 		}
 		if before != nil {
 			err := before(c, obj)
@@ -112,7 +115,7 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 				return
 			}
 		}
-		err := m.Insert(obj, uid)
+		err = m.Insert(obj, uid)
 
 		retdata := gin.H{"data": obj}
 		if after != nil {
@@ -130,8 +133,11 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 			b = false
 		}
 		var uid string
-		if auth.GetCurUserIDName != nil {
-			uid, _ = auth.GetCurUserIDName(c)
+		if auth.GetCurUser != nil {
+			user, err := auth.GetCurUser(c)
+			if err == nil {
+				uid = user.UserID()
+			}
 		}
 		if before != nil {
 			err := before(c, nil)
@@ -156,8 +162,11 @@ func (r *App) Register(robj interface{}, before func(c *gin.Context, data interf
 			b = false
 		}
 		var uid string
-		if auth.GetCurUserIDName != nil {
-			uid, _ = auth.GetCurUserIDName(c)
+		if auth.GetCurUser != nil {
+			user, err := auth.GetCurUser(c)
+			if err == nil {
+				uid = user.UserID()
+			}
 		}
 		if before != nil {
 			err := before(c, nil)

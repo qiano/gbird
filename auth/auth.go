@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gbird/logger"
 	"github.com/gin-gonic/gin"
@@ -11,8 +12,22 @@ import (
 	"strings"
 )
 
-//GetCurUserIDName 获取当前用户ID和名称
-var GetCurUserIDName func(*gin.Context) (string, string)
+//UserInterface 用户接口
+type UserInterface interface {
+	DisplayName() string
+	UserID() string
+}
+
+//GetCurUser 获取当前用户ID和名称
+var GetCurUser = func(r *gin.Context) (UserInterface, error) {
+	ss := sessions.Get(r)
+	user := ss.Get("user")
+	if user != nil {
+		u := user.(*User)
+		return u, nil
+	}
+	return nil, errors.New("未找到当前用户")
+}
 
 //User 用户
 type User struct {
@@ -23,15 +38,14 @@ type User struct {
 	IsActive bool `json:"Is_Active"`
 }
 
-//CurUser 获取当前用户信息
-func CurUser(r *gin.Context) User {
-	var u User
-	ss := sessions.Get(r)
-	user := ss.Get("user")
-	if user != nil {
-		u = user.(User)
-	}
-	return u
+//DisplayName  显示名称
+func (u *User) DisplayName() string {
+	return u.Name
+}
+
+//UserID  用户ID
+func (u *User) UserID() string {
+	return u.ID
 }
 
 //Middleware 权限中间件
@@ -52,7 +66,7 @@ func Middleware(verifyURL string, needAuth func(*gin.Context) bool) gin.HandlerF
 				var wu struct{ Data User }
 				json.Unmarshal(body, &wu)
 				ss := sessions.Get(c)
-				ss.Set("user", wu.Data)
+				ss.Set("user", &wu.Data)
 				ss.Save()
 				if strings.Contains(str, "errcode") {
 					c.Status(res.StatusCode)
