@@ -85,7 +85,7 @@ func Query(robj interface{}, qjson string, page, pageSize int, sort string, fiel
 	if err != nil {
 		return
 	}
-	qi, err := toQueryBson(qjson, containsDeleted)
+	qi, err := toQueryBson(robj, qjson, containsDeleted)
 	if err != nil {
 		return
 	}
@@ -162,7 +162,7 @@ func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (i
 	if err != nil {
 		return
 	}
-	q, err := toQueryBson(qjson, false)
+	q, err := toQueryBson(robj, qjson, false)
 	if err != nil {
 		return
 	}
@@ -210,7 +210,7 @@ func Count(robj interface{}, qjson string, containsDeleted bool) (count int, err
 		return 0, err
 	}
 	var b bson.M
-	b, err = toQueryBson(qjson, containsDeleted)
+	b, err = toQueryBson(robj, qjson, containsDeleted)
 	if err != nil {
 		return 0, err
 	}
@@ -255,11 +255,19 @@ func toBson(json string) (bson.M, error) {
 	return qi, nil
 }
 
-func toQueryBson(qjson string, containsDeleted bool) (bson.M, error) {
+func toQueryBson(robj interface{}, qjson string, containsDeleted bool) (bson.M, error) {
 	qi, err := toBson(qjson)
 	if err != nil {
 		return qi, err
 	}
+	//objectid处理
+	for key, val := range qi {
+		ty, kind := base.GetTypeKind(robj, key)
+		if ty == "ObjectId" && kind == "string" {
+			qi[key] = bson.ObjectIdHex(val.(string))
+		}
+	}
+
 	if !containsDeleted {
 		if qi == nil {
 			qi = bson.M{"base.isdelete": false}

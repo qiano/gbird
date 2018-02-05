@@ -43,7 +43,6 @@ func RegisterMetadata(robj interface{}) {
 	for i := 0; i < refobj.NumField(); i++ {
 		f := t.Field(i)
 		field := new(FieldInfo)
-		// field.Name = f.Name
 		field.Type = f.Type.Name()
 		field.Kind = f.Type.Kind().String()
 		field.Tags = make(map[string]string)
@@ -52,7 +51,7 @@ func RegisterMetadata(robj interface{}) {
 				field.Tags[tag] = v
 			}
 		}
-		fields[f.Name] = *field
+		fields[strings.ToLower(f.Name)] = *field
 	}
 	Metadatas[getKey(robj)] = fields
 	logger.Infoln(getKey(robj) + " 模型元数据注册")
@@ -75,6 +74,7 @@ func Metadata(robj interface{}) (map[string]FieldInfo, error) {
 
 //FieldMetadata 读取字段元数据
 func FieldMetadata(robj interface{}, field string) (f FieldInfo, err error) {
+	field = strings.ToLower(field)
 	model, err := Metadata(robj)
 	if err != nil {
 		return f, err
@@ -96,6 +96,16 @@ func GetTag(robj interface{}, field, tag string) (string, error) {
 		return "", errors.New("model:" + getKey(robj) + ",field:" + field + ",tag:" + tag + ",未读取到TAG数据")
 	}
 	return fieldmd.Tags[tag], nil
+}
+
+//GetTypeKind 读取字段的类型和Kind
+func GetTypeKind(robj interface{}, field string) (string, string) {
+	fieldmd, err := FieldMetadata(robj, field)
+	fmt.Println(fieldmd)
+	if err != nil {
+		return "", ""
+	}
+	return fieldmd.Type, fieldmd.Kind
 }
 
 //FindTag 查找TAG值，或指定tag值的field
