@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"gbird/logger"
+	"gbird/util/logger"
 	"github.com/gin-gonic/gin"
 )
 

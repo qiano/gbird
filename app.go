@@ -3,8 +3,8 @@ package gbird
 import (
 	"fmt"
 	"gbird/base"
-	"gbird/config"
-	"gbird/logger"
+	"gbird/util/config"
+	"gbird/util/logger"
 	mw "gbird/middleware"
 	"gbird/mongodb"
 	"gbird/util"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gbird/logger"
+	"gbird/util/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/tommy351/gin-sessions"
 	"io/ioutil"

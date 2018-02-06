@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"gbird/auth"
 	"gbird/base"
-	"gbird/logger"
+	"gbird/util/logger"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"

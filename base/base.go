@@ -3,7 +3,7 @@ package base
 import (
 	"errors"
 	"fmt"
-	"gbird/logger"
+	"gbird/util/logger"
 	"reflect"
 	"strconv"
 	"strings"
@@ -101,7 +101,6 @@ func GetTag(robj interface{}, field, tag string) (string, error) {
 //GetTypeKind 读取字段的类型和Kind
 func GetTypeKind(robj interface{}, field string) (string, string) {
 	fieldmd, err := FieldMetadata(robj, field)
-	fmt.Println(fieldmd)
 	if err != nil {
 		return "", ""
 	}
