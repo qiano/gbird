@@ -1,6 +1,7 @@
 package apilog
 
 import (
+	"gbird"
 	"bytes"
 	"gbird/auth"
 	"gbird/base"
@@ -12,6 +13,10 @@ import (
 	"net/http"
 	"strings"
 )
+//Register 模型注册
+func Register(app *gbird.App){
+	app.Register(&APILog{}, nil)
+}
 
 //APILog api調用日誌
 type APILog struct {
