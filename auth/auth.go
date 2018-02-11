@@ -49,11 +49,10 @@ func (u *User) UserID() string {
 }
 
 //Middleware 权限中间件
-func Middleware(verifyURL string, needAuth func(*gin.Context) bool) gin.HandlerFunc {
+func Middleware(authFn func(*gin.Context) bool, verifyURL string) gin.HandlerFunc {
 	logger.Infoln("帐户权限验证：开启")
 	return func(c *gin.Context) {
-		cip := c.ClientIP()
-		if cip != "127.0.0.1" && needAuth(c) {
+		if !authFn(c) && verifyURL != "" {
 			if token := c.Request.Header.Get("token"); token != "" {
 				res, err := http.Get(verifyURL + "?token=" + token)
 				if err != nil {
@@ -89,6 +88,5 @@ func Middleware(verifyURL string, needAuth func(*gin.Context) bool) gin.HandlerF
 			return
 		}
 		c.Next()
-
 	}
 }

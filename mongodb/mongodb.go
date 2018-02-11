@@ -158,6 +158,7 @@ func FindAll(robj interface{}, qjson, sort string) ([]interface{}, error) {
 
 //Update 更新记录
 func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
+	
 	col, err := getCollection(robj)
 	if err != nil {
 		return
@@ -175,6 +176,7 @@ func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (i
 	temp["base.updatetime"] = time.Now()
 	temp["base.updater"] = userid
 	UseCol(col, func(c *mgo.Collection) {
+	
 		if batch {
 			if info, err = c.UpdateAll(q, up); err != nil {
 			}
