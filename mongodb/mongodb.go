@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"errors"
+	"fmt"
 	"gbird/base"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -158,7 +159,7 @@ func FindAll(robj interface{}, qjson, sort string) ([]interface{}, error) {
 
 //Update 更新记录
 func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
-	
+
 	col, err := getCollection(robj)
 	if err != nil {
 		return
@@ -176,7 +177,7 @@ func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (i
 	temp["base.updatetime"] = time.Now()
 	temp["base.updater"] = userid
 	UseCol(col, func(c *mgo.Collection) {
-	
+
 		if batch {
 			if info, err = c.UpdateAll(q, up); err != nil {
 			}
@@ -246,6 +247,29 @@ func FindRef(robj interface{}, ref *mgo.DBRef) (interface{}, error) {
 	return temp, err
 }
 
+func toLower(q map[string]interface{}) bson.M {
+	ret := make(bson.M)
+	for key, val := range q {
+		fmt.Println(key, val, reflect.TypeOf(val), reflect.TypeOf(val).Kind())
+		if reflect.TypeOf(val) == reflect.TypeOf(q) && val != nil {
+			val = toLower(val.(map[string]interface{}))
+		} else if reflect.TypeOf(val).Kind() == reflect.Slice {
+			arr := make([]map[string]interface{}, 0, 0)
+			temp := val.([]interface{})
+			for i := 0; i < len(temp); i++ {
+				v := temp[i].(map[string]interface{})
+				v = toLower(v)
+				arr = append(arr, v)
+			}
+			val = arr
+
+		}
+		ret[strings.ToLower(key)] = val
+	}
+	fmt.Println(ret)
+	return ret
+}
+
 func toBson(json string) (bson.M, error) {
 	if len(json) == 0 {
 		return nil, nil
@@ -254,7 +278,8 @@ func toBson(json string) (bson.M, error) {
 	if err := bson.UnmarshalJSON([]byte(json), &qi); err != nil {
 		return nil, errors.New("json=" + json + ",查询mongodb 查询 json错误 " + err.Error())
 	}
-	return qi, nil
+
+	return toLower(qi), nil
 }
 
 func toQueryBson(robj interface{}, qjson string, containsDeleted bool) (bson.M, error) {
