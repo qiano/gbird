@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"errors"
-	"fmt"
 	"gbird/base"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -250,7 +249,6 @@ func FindRef(robj interface{}, ref *mgo.DBRef) (interface{}, error) {
 func toLower(q map[string]interface{}) bson.M {
 	ret := make(bson.M)
 	for key, val := range q {
-		fmt.Println(key, val, reflect.TypeOf(val), reflect.TypeOf(val).Kind())
 		if reflect.TypeOf(val) == reflect.TypeOf(q) && val != nil {
 			val = toLower(val.(map[string]interface{}))
 		} else if reflect.TypeOf(val).Kind() == reflect.Slice {
@@ -266,7 +264,6 @@ func toLower(q map[string]interface{}) bson.M {
 		}
 		ret[strings.ToLower(key)] = val
 	}
-	fmt.Println(ret)
 	return ret
 }
 

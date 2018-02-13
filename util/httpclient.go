@@ -4,6 +4,10 @@ import (
 	"net"
 	"net/http"
 	"time"
+	"bytes"
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 )
 
 type NetConfig struct {
@@ -46,4 +50,41 @@ func NewTimeoutClient(args ...interface{}) *http.Client {
 			Dial: TimeoutDialer(config),
 		},
 	}
+}
+
+
+var _tlsConfig *tls.Config
+
+//GetTLSConfig 采用单例模式初始化ca
+func GetTLSConfig(CertPath, KeyPath, CAPath string) (*tls.Config, error) {
+	if _tlsConfig != nil {
+		return _tlsConfig, nil
+	}
+	// load cert
+	cert, err := tls.LoadX509KeyPair(CertPath, KeyPath)
+	if err != nil {
+		return nil, err
+	}
+	// load root ca
+	caData, err := ioutil.ReadFile(CAPath)
+	if err != nil {
+		return nil, err
+	}
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(caData)
+	_tlsConfig = &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      pool,
+	}
+	return _tlsConfig, nil
+}
+
+//SecurePost 携带ca证书的安全请求
+func SecurePost(url string, xmlContent []byte,tlsConfig *tls.Config) (*http.Response, error) {
+	tr := &http.Transport{TLSClientConfig: tlsConfig}
+	client := &http.Client{Transport: tr}
+	return client.Post(
+		url,
+		"application/xml",
+		bytes.NewBuffer(xmlContent))
 }
