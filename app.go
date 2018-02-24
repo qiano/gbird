@@ -3,12 +3,13 @@ package gbird
 import (
 	"fmt"
 	"gbird/base"
-	"gbird/util/config"
-	"gbird/util/logger"
 	mw "gbird/middleware"
 	"gbird/mongodb"
 	"gbird/util"
+	"gbird/util/config"
+	"gbird/util/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron"
 	"github.com/tommy351/gin-sessions"
 	"gopkg.in/mgo.v2"
 	"io"
@@ -21,7 +22,8 @@ import (
 //App 应用实例
 type App struct {
 	*gin.Engine
-	Name string
+	TaskManager *cron.Cron
+	Name        string
 }
 
 //NewApp 创建实例
@@ -33,7 +35,7 @@ func NewApp(name string) *App {
 	r.Static("/doc", "./doc")
 	r.Use(sessions.Middleware(name+"session", store))
 	r.Use(mw.CORSMiddleware())
-	app := &App{Engine: r, Name: name}
+	app := &App{Engine: r, Name: name, TaskManager: cron.New()}
 	r.GET("/", func(c *gin.Context) {
 		c.String(200, name+" module server")
 	})

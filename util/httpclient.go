@@ -1,13 +1,13 @@
 package util
 
 import (
-	"net"
-	"net/http"
-	"time"
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
+	"net"
+	"net/http"
+	"time"
 )
 
 type NetConfig struct {
@@ -52,7 +52,6 @@ func NewTimeoutClient(args ...interface{}) *http.Client {
 	}
 }
 
-
 var _tlsConfig *tls.Config
 
 //GetTLSConfig 采用单例模式初始化ca
@@ -79,8 +78,15 @@ func GetTLSConfig(CertPath, KeyPath, CAPath string) (*tls.Config, error) {
 	return _tlsConfig, nil
 }
 
+//GetSecureClient 安全连接
+func GetSecureClient(tlsConfig *tls.Config) *http.Client {
+	tr := &http.Transport{TLSClientConfig: tlsConfig}
+	client := &http.Client{Transport: tr}
+	return client
+}
+
 //SecurePost 携带ca证书的安全请求
-func SecurePost(url string, xmlContent []byte,tlsConfig *tls.Config) (*http.Response, error) {
+func SecurePost(url string, xmlContent []byte, tlsConfig *tls.Config) (*http.Response, error) {
 	tr := &http.Transport{TLSClientConfig: tlsConfig}
 	client := &http.Client{Transport: tr}
 	return client.Post(
@@ -88,3 +94,4 @@ func SecurePost(url string, xmlContent []byte,tlsConfig *tls.Config) (*http.Resp
 		"application/xml",
 		bytes.NewBuffer(xmlContent))
 }
+

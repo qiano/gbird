@@ -30,6 +30,16 @@ type RegisterOptins struct {
 //Register 模型注册
 func (r *App) Register(robj interface{}, options *RegisterOptins) {
 	base.RegisterMetadata(robj)
+	rname, _, err := base.FindTag(robj, "urlname", "")
+	if err != nil {
+		logger.Errorln(err)
+		return
+	}
+	if rname == "" {
+		logger.Infoln(reflect.TypeOf(robj).String() + "未指定 urlname ，不生成默认路由")
+		return
+	}
+	logger.Infoln(reflect.TypeOf(robj).String() + "生成默认路由")
 	//初始化options
 	if options == nil {
 		options = &RegisterOptins{
@@ -44,11 +54,6 @@ func (r *App) Register(robj interface{}, options *RegisterOptins) {
 		}
 	}
 	if options.RouterEnabled < 0 {
-		return
-	}
-	rname, _, err := base.FindTag(robj, "urlname", "")
-	if err != nil {
-		logger.Errorln(err)
 		return
 	}
 	grp := r.Group("/api/" + rname)

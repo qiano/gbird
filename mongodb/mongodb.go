@@ -150,7 +150,7 @@ func FindAll(robj interface{}, qjson, sort string) ([]interface{}, error) {
 		return nil, err
 	}
 	if total == 0 {
-		return nil, errors.New("一个都没有")
+		return make([]interface{}, 0, 0), nil
 	}
 	arr := base.ToSlice(data)
 	return arr, nil
@@ -196,6 +196,7 @@ func UpdateID(robj interface{}, id bson.ObjectId, data bson.M, userid string) (e
 		return
 	}
 	d := bson.M{"$set": data}
+	d = toLower(d)
 	temp := d["$set"].(bson.M)
 	temp["base.updatetime"] = time.Now()
 	temp["base.updater"] = userid
