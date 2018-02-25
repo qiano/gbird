@@ -214,3 +214,12 @@ func GetEnum(robj interface{}, field string) (map[string]string, error) {
 	}
 	return rets, nil
 }
+
+//GetEnumDesc 枚举值描述
+func GetEnumDesc(robj interface{}, fieldname, code string) string {
+	enums, err := GetEnum(robj, fieldname)
+	if err != nil {
+		panic(err)
+	}
+	return enums[code]
+}

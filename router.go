@@ -39,7 +39,6 @@ func (r *App) Register(robj interface{}, options *RegisterOptins) {
 		logger.Infoln(reflect.TypeOf(robj).String() + "未指定 urlname ，不生成默认路由")
 		return
 	}
-	logger.Infoln(reflect.TypeOf(robj).String() + "生成默认路由")
 	//初始化options
 	if options == nil {
 		options = &RegisterOptins{

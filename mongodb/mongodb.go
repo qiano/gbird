@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
+	"gbird/util/logger"
 )
 
 //GlobalMgoSession 全局mongo连接
@@ -28,6 +29,7 @@ func UseCol(colname string, f func(c *mgo.Collection)) {
 //Insert 新增
 func Insert(robj interface{}, userid string) (err error) {
 	if ok, err := ModelValidation(robj); !ok {
+		logger.Fatalln(err)
 		return err
 	}
 	col, err := getCollection(robj)
