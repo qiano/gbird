@@ -3,7 +3,7 @@ package gbird
 import (
 	"encoding/json"
 	"gbird/auth"
-	"gbird/base"
+	"gbird/model"
 	m "gbird/mongodb"
 	"gbird/util/logger"
 	"github.com/gin-gonic/gin"
@@ -29,8 +29,8 @@ type RegisterOptins struct {
 
 //Register 模型注册
 func (r *App) Register(robj interface{}, options *RegisterOptins) {
-	base.RegisterMetadata(robj)
-	rname, _, err := base.FindTag(robj, "urlname", "")
+	model.RegisterMetadata(robj)
+	rname, err := model.MTagVal(robj, "urlname")
 	if err != nil {
 		logger.Errorln(err)
 		return

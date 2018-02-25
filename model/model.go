@@ -1,4 +1,4 @@
-package base
+package model
 
 import (
 	"errors"
@@ -24,7 +24,6 @@ var Metadatas map[string]map[string]FieldInfo
 
 //FieldInfo 字段元数据
 type FieldInfo struct {
-	// Name string            //字段名
 	Tags map[string]string //Tags
 	Type string            //类型
 	Kind string            //类型种类
@@ -34,10 +33,12 @@ func init() {
 	Metadatas = make(map[string]map[string]FieldInfo)
 }
 
+var mtags = []string{"collection", "urlname"}                                         //模型标签
+var ftags = []string{"bson", "required", "default", "desc", "display", "ref", "enum"} //字段标签
+
 //RegisterMetadata 将模型注册到源数据信息中
 func RegisterMetadata(robj interface{}) {
 	fields := make(map[string]FieldInfo)
-	tags := []string{"bson", "collection", "urlname", "sole", "required", "default", "desc", "display", "ref"}
 	refobj := reflect.ValueOf(robj).Elem()
 	t := refobj.Type()
 	for i := 0; i < refobj.NumField(); i++ {
@@ -46,7 +47,12 @@ func RegisterMetadata(robj interface{}) {
 		field.Type = f.Type.Name()
 		field.Kind = f.Type.Kind().String()
 		field.Tags = make(map[string]string)
-		for _, tag := range tags {
+		for _, tag := range mtags {
+			if v := f.Tag.Get(tag); v != "" {
+				field.Tags[tag] = v
+			}
+		}
+		for _, tag := range ftags {
 			if v := f.Tag.Get(tag); v != "" {
 				field.Tags[tag] = v
 			}
@@ -85,17 +91,44 @@ func FieldMetadata(robj interface{}, field string) (f FieldInfo, err error) {
 	return model[field], nil
 }
 
-//GetTag 读取TAG
-func GetTag(robj interface{}, field, tag string) (string, error) {
-	fieldmd, err := FieldMetadata(robj, field)
-	if err != nil {
-		return "", err
+//FTagVal 字段TAG值
+func FTagVal(robj interface{}, field, tag string) (string, error) {
+	for _, val := range ftags {
+		if tag == val {
+			fieldmd, err := FieldMetadata(robj, field)
+			if err != nil {
+				return "", err
+			}
+			tag = strings.ToLower(tag)
+			if _, ok := fieldmd.Tags[tag]; !ok {
+				return "", errors.New("model:" + getKey(robj) + ",field:" + field + ",tag:" + tag + ",未读取到TAG数据")
+			}
+			return fieldmd.Tags[tag], nil
+		}
 	}
-	tag = strings.ToLower(tag)
-	if _, ok := fieldmd.Tags[tag]; !ok {
-		return "", errors.New("model:" + getKey(robj) + ",field:" + field + ",tag:" + tag + ",未读取到TAG数据")
+	return "", errors.New("该方法只支持模型标签：" + strings.Join(ftags, ","))
+}
+
+//MTagVal 获取模型标签的值，只支持标签：collection, urlname
+func MTagVal(robj interface{}, tag string) (string, error) {
+	for _, val := range mtags {
+		if tag == val {
+			model, err := Metadata(robj)
+			if err != nil {
+				return "", err
+			}
+			tag = strings.ToLower(tag)
+			for _, val := range model {
+				if v, ok := val.Tags[tag]; ok {
+					if v != "" {
+						return v, nil
+					}
+				}
+			}
+			return "", errors.New("model:" + getKey(robj) + ",未设置标签:" + tag)
+		}
 	}
-	return fieldmd.Tags[tag], nil
+	return "", errors.New("该方法只支持模型标签：" + strings.Join(mtags, ","))
 }
 
 //GetTypeKind 读取字段的类型和Kind
@@ -105,25 +138,6 @@ func GetTypeKind(robj interface{}, field string) (string, string) {
 		return "", ""
 	}
 	return fieldmd.Type, fieldmd.Kind
-}
-
-//FindTag 查找TAG值，或指定tag值的field
-func FindTag(robj interface{}, tag, value string) (tagval string, field string, err error) {
-	model, err := Metadata(robj)
-	if err != nil {
-		return
-	}
-	tag = strings.ToLower(tag)
-	for key, val := range model {
-		if v, ok := val.Tags[tag]; ok {
-			if value == "" {
-				return v, key, nil
-			} else if value == v {
-				return v, key, nil
-			}
-		}
-	}
-	return "", "", nil
 }
 
 //GetFieldsWithTag 获取有指定TAG的字段名
@@ -184,4 +198,19 @@ func GetValue(robj interface{}, field string) (string, interface{}) {
 		return "", f.Interface()
 	}
 	return "", nil
+}
+
+//GetEnum  获取枚举值
+func GetEnum(robj interface{}, field string) (map[string]string, error) {
+	val, err := FTagVal(robj, field, "enum")
+	if err != nil {
+		return nil, err
+	}
+	rets := make(map[string]string)
+	kvs := strings.Split(val, ",")
+	for j := 0; j < len(kvs); j++ {
+		ss := strings.Split(kvs[j], ":")
+		rets[ss[0]] = ss[1]
+	}
+	return rets, nil
 }

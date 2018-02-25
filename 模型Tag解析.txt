@@ -1,9 +1,16 @@
-bson:"_id"            Mongodb主键ID
+模型标签：collection  urlname     其余为字段标签
+模型固定字段，模型标签都写在ID字段上
+ID   bson.ObjectId `bson:"_id"  collection:"scene" urlname:"scene" `
+base.Base
+
+
+TAG说明
+bson:"_id"            Mongodb字段名
 collection:"colname"  Mondgodb 数据库模型文档名
 urlname:"urlname"     模型路由名
-sole:"fields"         重复性检查 例 a | b,c  通过 | 分组, 例子表式： a值唯一,并且 b与c组合唯一
 required:"true"       必填字段，新增和更新时不能为空，int,string设置有效，其它类型无效，暂未实现
-default:"val"         默认值,   int,string 设置有效，其它类型无效
 display:"name"        显示名称
 desc:"content"        描述
 ref:"collection"      用于引用字段 dbref
+default:"val"         默认值,   int,string 设置有效，其它类型无效
+enum:"P:百分比,O:按单"  枚举 

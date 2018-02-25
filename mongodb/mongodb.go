@@ -2,11 +2,10 @@ package mongodb
 
 import (
 	"errors"
-	"gbird/base"
+	"gbird/model"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -36,26 +35,26 @@ func Insert(robj interface{}, userid string) (err error) {
 		return
 	}
 	//引用关系处理
-	fs, err := base.GetFieldsWithTag(robj, "ref")
+	fs, err := model.GetFieldsWithTag(robj, "ref")
 	if err != nil {
 		return
 	}
 	for _, f := range fs {
-		_, val := base.GetValue(robj, f)
+		_, val := model.GetValue(robj, f)
 		ref := val.(mgo.DBRef)
 		id := ref.Id.(string)
-		c, er := base.GetTag(robj, f, "ref")
+		c, er := model.FTagVal(robj, f, "ref")
 		if er != nil {
 			return er
 		}
 		ref.Id = bson.ObjectIdHex(id)
 		ref.Collection = c
 		ref.Database = DbName
-		base.SetValue(robj, f, ref)
+		model.SetValue(robj, f, ref)
 	}
 
-	base.SetValue(robj, "ID", bson.NewObjectId())
-	base.SetValue(robj, "Base", base.Base{
+	model.SetValue(robj, "ID", bson.NewObjectId())
+	model.SetValue(robj, "Base", model.Base{
 		Creater:    userid,
 		CreateTime: time.Now(),
 		Updater:    userid,
@@ -139,7 +138,7 @@ func FindOne(robj interface{}, qjson, sort string) (interface{}, error) {
 	if total == 0 {
 		return nil, errors.New("一个都没有")
 	}
-	arr := base.ToSlice(data)
+	arr := model.ToSlice(data)
 	return arr[0], nil
 }
 
@@ -152,13 +151,12 @@ func FindAll(robj interface{}, qjson, sort string) ([]interface{}, error) {
 	if total == 0 {
 		return make([]interface{}, 0, 0), nil
 	}
-	arr := base.ToSlice(data)
+	arr := model.ToSlice(data)
 	return arr, nil
 }
 
 //Update 更新记录
 func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
-
 	col, err := getCollection(robj)
 	if err != nil {
 		return
@@ -168,6 +166,10 @@ func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (i
 		return
 	}
 	u, err := toBson(ujson)
+	if err != nil {
+		return
+	}
+	err = UpdateValidation(robj, u)
 	if err != nil {
 		return
 	}
@@ -192,6 +194,10 @@ func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (i
 //UpdateID 更新
 func UpdateID(robj interface{}, id bson.ObjectId, data bson.M, userid string) (err error) {
 	col, err := getCollection(robj)
+	if err != nil {
+		return
+	}
+	err = UpdateValidation(robj, data)
 	if err != nil {
 		return
 	}
@@ -287,7 +293,7 @@ func toQueryBson(robj interface{}, qjson string, containsDeleted bool) (bson.M, 
 	}
 	//objectid处理
 	for key, val := range qi {
-		ty, kind := base.GetTypeKind(robj, key)
+		ty, kind := model.GetTypeKind(robj, key)
 		if ty == "ObjectId" && kind == "string" {
 			qi[key] = bson.ObjectIdHex(val.(string))
 		}
@@ -323,65 +329,5 @@ func getMongoID(robj interface{}) (bson.ObjectId, error) {
 
 //GetCollection 获取模型对应的集合
 func getCollection(robj interface{}) (string, error) {
-	tval, _, err := base.FindTag(robj, "collection", "")
-	return tval, err
-}
-
-//ModelValidation 模型验证
-func ModelValidation(robj interface{}) (bool, error) {
-	//结构验证
-	refobj := reflect.ValueOf(robj).Elem()
-	t := refobj.Type()
-	for i := 0; i < refobj.NumField(); i++ {
-		def := t.Field(i).Tag.Get("default")
-		if def != "" {
-			if t.Field(i).Type.Kind() == reflect.Int && refobj.Field(i).Int() == 0 {
-				val, err := strconv.Atoi(def)
-				if err != nil {
-					return false, errors.New("model:" + t.String() + ",字段" + t.Field(i).Name + "，TAG:default,默认值设置异常")
-				}
-				refobj.Field(i).SetInt((int64)(val))
-			}
-			if t.Field(i).Type.Kind() == reflect.String && refobj.Field(i).String() == "" {
-				refobj.Field(i).SetString(def)
-			}
-		}
-		req := t.Field(i).Tag.Get("required")
-		if req == "true" {
-			val, o := base.GetValue(robj, t.Field(i).Name)
-			if val == "" && o == nil {
-				return false, errors.New("model:" + t.String() + ",字段" + t.Field(i).Name + "，TAG:required,值为空")
-			}
-		}
-	}
-
-	//唯一性验证
-	soles, _, err := base.FindTag(robj, "sole", "")
-	if err != nil {
-		panic(err)
-	}
-	if len(soles) > 0 {
-		exists := []string{}
-		groups := strings.Split(soles, "|")
-		for _, g := range groups {
-			temps := []string{}
-			for _, val := range strings.Split(g, ",") {
-				v, _ := base.GetValue(robj, val)
-				if v != "" {
-					temps = append(temps, `"`+strings.ToLower(val)+`":"`+v+`"`)
-				}
-			}
-			if len(temps) > 0 {
-				exists = append(exists, `{`+strings.Join(temps, ",")+`}`)
-			}
-		}
-		qjson := exists[0]
-		if len(exists) > 1 {
-			qjson = `{"$or":[` + strings.Join(exists, ",") + `]}`
-		}
-		if count, err := Count(robj, qjson, false); err == nil && count > 0 {
-			return false, errors.New("数据已存���，查询条件：" + qjson)
-		}
-	}
-	return true, nil
+	return model.MTagVal(robj, "collection")
 }

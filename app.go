@@ -2,7 +2,7 @@ package gbird
 
 import (
 	"fmt"
-	"gbird/base"
+	"gbird/model"
 	mw "gbird/middleware"
 	"gbird/mongodb"
 	"gbird/util"
@@ -40,11 +40,11 @@ func NewApp(name string) *App {
 		c.String(200, name+" module server")
 	})
 	r.GET("/api/metadata", func(c *gin.Context) {
-		model, _ := c.GetQuery("model")
-		if model != "" {
-			Ret(c, gin.H{"data": base.Metadatas[model]}, nil, 0)
+		m, _ := c.GetQuery("model")
+		if m != "" {
+			Ret(c, gin.H{"data": model.Metadatas[m]}, nil, 0)
 		} else {
-			Ret(c, gin.H{"data": base.Metadatas}, nil, 0)
+			Ret(c, gin.H{"data": model.Metadatas}, nil, 0)
 		}
 	})
 	return app
@@ -59,7 +59,7 @@ func (a *App) Router(method, path string, f func(*gin.Context)) {
 
 //ModelRouter 注册模型下的路由
 func (a *App) ModelRouter(robj interface{}, method, path string, f func(*gin.Context)) {
-	rname, _, err := base.FindTag(robj, "urlname", "")
+	rname, err := model.MTagVal(robj, "urlname")
 	if err != nil {
 		panic(err)
 	}

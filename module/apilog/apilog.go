@@ -4,7 +4,7 @@ import (
 	"gbird"
 	"bytes"
 	"gbird/auth"
-	"gbird/base"
+	"gbird/model"
 	"gbird/util/logger"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
@@ -31,7 +31,7 @@ type APILog struct {
 	IP                string //IP
 	UserID            string //用户ID
 	UserName          string //用户名
-	base.Base
+	model.Base
 }
 
 //Middleware API日志中间件
