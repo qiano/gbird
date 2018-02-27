@@ -31,11 +31,7 @@ type RegisterOptins struct {
 func (r *App) Register(robj interface{}, options *RegisterOptins) {
 	model.RegisterMetadata(robj)
 	rname, err := model.MTagVal(robj, "urlname")
-	if err != nil {
-		logger.Errorln(err)
-		return
-	}
-	if rname == "" {
+	if err != nil || rname == "" {
 		logger.Infoln(reflect.TypeOf(robj).String() + "未指定 urlname ，不生成默认路由")
 		return
 	}
