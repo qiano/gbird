@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
-	"gbird/util/logger"
+	"gbird/module/logger"
 )
 
 //GlobalMgoSession 全局mongo连接

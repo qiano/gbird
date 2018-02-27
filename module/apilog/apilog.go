@@ -3,9 +3,9 @@ package apilog
 import (
 	"gbird"
 	"bytes"
-	"gbird/auth"
+	"gbird/module/auth"
 	"gbird/model"
-	"gbird/util/logger"
+	"gbird/module/logger"
 	m "gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"

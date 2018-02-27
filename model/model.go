@@ -3,7 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
-	"gbird/util/logger"
+	"gbird/module/logger"
 	"reflect"
 	"strconv"
 	"strings"
@@ -38,6 +38,12 @@ var ftags = []string{"bson", "required", "default", "desc", "display", "ref", "e
 
 //RegisterMetadata 将模型注册到源数据信息中
 func RegisterMetadata(robj interface{}) {
+	key := getKey(robj)
+	_, ok := Metadatas[key]
+	if ok {
+		return
+	}
+
 	fields := make(map[string]FieldInfo)
 	refobj := reflect.ValueOf(robj).Elem()
 	t := refobj.Type()
@@ -59,8 +65,8 @@ func RegisterMetadata(robj interface{}) {
 		}
 		fields[strings.ToLower(f.Name)] = *field
 	}
-	Metadatas[getKey(robj)] = fields
-	logger.Infoln(getKey(robj) + " 模型元数据注册")
+	Metadatas[key] = fields
+	logger.Infoln(key + " 模型元数据注册")
 }
 
 func getKey(robj interface{}) string {

@@ -3,11 +3,10 @@ package gbird
 import (
 	"fmt"
 	"gbird/model"
-	mw "gbird/middleware"
 	"gbird/mongodb"
 	"gbird/util"
-	"gbird/util/config"
-	"gbird/util/logger"
+	"gbird/module/config"
+	"gbird/module/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron"
 	"github.com/tommy351/gin-sessions"
@@ -15,7 +14,6 @@ import (
 	"io"
 	"mime/multipart"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -34,10 +32,10 @@ func NewApp(name string) *App {
 	r.Static("/assets", "./assets")
 	r.Static("/doc", "./doc")
 	r.Use(sessions.Middleware(name+"session", store))
-	r.Use(mw.CORSMiddleware())
+	r.Use(CORSMiddleware())
 	app := &App{Engine: r, Name: name, TaskManager: cron.New()}
 	r.GET("/", func(c *gin.Context) {
-		c.String(200, name+" module server")
+		c.String(200, name+"  server")
 	})
 	r.GET("/api/metadata", func(c *gin.Context) {
 		m, _ := c.GetQuery("model")
@@ -47,26 +45,8 @@ func NewApp(name string) *App {
 			Ret(c, gin.H{"data": model.Metadatas}, nil, 0)
 		}
 	})
+	app.TaskManager.Start()
 	return app
-}
-
-//Router 路由注册
-func (a *App) Router(method, path string, f func(*gin.Context)) {
-	m := strings.ToUpper(method)
-	a.Engine.Handle(m, path, f)
-	// logger.Infoln("路由注册：" + m + " " + path)
-}
-
-//ModelRouter 注册模型下的路由
-func (a *App) ModelRouter(robj interface{}, method, path string, f func(*gin.Context)) {
-	rname, err := model.MTagVal(robj, "urlname")
-	if err != nil {
-		panic(err)
-	}
-	grp := a.Group("/api/" + rname)
-	m := strings.ToUpper(method)
-	grp.Handle(m, path, f)
-	// logger.Infoln("路由注册：" + m + " /api/" + rname + path)
 }
 
 //UseMongodb 使用Mongo数据库
@@ -113,4 +93,22 @@ func SaveUploadedFile(file *multipart.FileHeader, flag string) (path string, err
 	io.Copy(out, src)
 
 	return
+}
+
+//CORSMiddleware 跨域
+func CORSMiddleware() gin.HandlerFunc {
+	logger.Infoln("跨域：开启")
+	return func(c *gin.Context) {
+		origin := c.Request.Header.Get("origin")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, token")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		c.Writer.Header().Set("vary", "Origin")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	}
 }

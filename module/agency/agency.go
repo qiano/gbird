@@ -1,15 +1,15 @@
-package middleware
+package agency
 
 import (
-	"gbird/util/logger"
+	"gbird/module/logger"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
-//AgencyMiddleware 代理中间件
-func AgencyMiddleware(getMap func(*gin.Context) string) gin.HandlerFunc {
+//Middleware 代理中间件
+func Middleware(getMap func(*gin.Context) string) gin.HandlerFunc {
 	logger.Infoln("代理功能：开启")
 	return func(c *gin.Context) {
 		if strings.ToLower(c.Request.Method) == "options" {
@@ -18,7 +18,7 @@ func AgencyMiddleware(getMap func(*gin.Context) string) gin.HandlerFunc {
 		}
 		if target := getMap(c); len(target) > 0 {
 			if c.Request.URL.RawQuery != "" {
-				target =  target + "?" + c.Request.URL.RawQuery
+				target = target + "?" + c.Request.URL.RawQuery
 			}
 			logger.Infoln(c.Request.Method+" "+c.Request.RequestURI, " --> ", target)
 			req, err := http.NewRequest(c.Request.Method, target, c.Request.Body)

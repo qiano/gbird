@@ -2,10 +2,10 @@ package gbird
 
 import (
 	"encoding/json"
-	"gbird/auth"
+	"gbird/module/auth"
 	"gbird/model"
 	m "gbird/mongodb"
-	"gbird/util/logger"
+	"gbird/module/logger"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
