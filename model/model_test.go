@@ -10,5 +10,5 @@ func TestMetadata(t *testing.T) {
 	fmt.Println(Metadatas)
 	fmt.Println(Metadata(&Base{}))
 	fmt.Println(FieldMetadata(&Base{}, "IsDelete"))
-	fmt.Println(GetTag(&Base{}, "IsDelete", "bson"))
+	fmt.Println(FTagVal(&Base{}, "IsDelete", "bson"))
 }

@@ -3,12 +3,15 @@ package model
 import (
 	"errors"
 	"fmt"
-	"gbird/module/logger"
+	"gbird/logger"
+	
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 )
+
+
 
 //Base 模型基础字段
 type Base struct {

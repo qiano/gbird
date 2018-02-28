@@ -20,7 +20,7 @@ package logger
 
 import (
 	"fmt"
-	"gbird/module/config"
+	"gbird/config"
 	"io"
 	"log"
 	"os"

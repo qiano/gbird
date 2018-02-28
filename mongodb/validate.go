@@ -2,9 +2,9 @@ package mongodb
 
 import (
 	"errors"
-	"gbird/model"
 	"reflect"
 	"strconv"
+	"gbird/model"
 )
 
 //ModelValidation 模型验证

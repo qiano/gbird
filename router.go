@@ -2,10 +2,10 @@ package gbird
 
 import (
 	"encoding/json"
-	"gbird/module/auth"
+	"gbird/auth"
+	"gbird/logger"
 	"gbird/model"
 	m "gbird/mongodb"
-	"gbird/module/logger"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
@@ -14,8 +14,7 @@ import (
 	"strconv"
 	"strings"
 )
-
-//RegisterOptins 模型注册选项
+//RegisterOptins 路由注册选项
 type RegisterOptins struct {
 	BeforeHandler func(c *gin.Context, data interface{}) error
 	AfterHandler  func(c *gin.Context, data *gin.H, err error) error

@@ -2,13 +2,13 @@ package mongodb
 
 import (
 	"errors"
-	"gbird/model"
+	"gbird/logger"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
 	"strings"
 	"time"
-	"gbird/module/logger"
+	"gbird/model"
 )
 
 //GlobalMgoSession 全局mongo连接
