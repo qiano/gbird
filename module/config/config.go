@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"flag"
-	// "fmt"
 	"io/ioutil"
 	"os"
 	// "path"
