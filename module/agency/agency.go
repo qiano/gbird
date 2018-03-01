@@ -1,7 +1,7 @@
 package agency
 
 import (
-	"gbird/module/logger"
+	"gbird/logger"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
