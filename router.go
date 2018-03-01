@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 )
+
 //RegisterOptins 路由注册选项
 type RegisterOptins struct {
 	BeforeHandler func(c *gin.Context, data interface{}) error
@@ -179,7 +180,7 @@ func (r *App) Register(robj interface{}, options *RegisterOptins) {
 				}
 			}
 			info, err := m.Update(robj, cond, doc, uid, b)
-			retdata := gin.H{"data": info}
+			retdata := gin.H{"data": info, "cond": cond, "multi": b}
 			if options.AfterHandler != nil {
 				err = options.AfterHandler(c, &retdata, err)
 			}
@@ -210,7 +211,7 @@ func (r *App) Register(robj interface{}, options *RegisterOptins) {
 				}
 			}
 			info, err := m.Remove(robj, cond, uid, b)
-			retdata := gin.H{"data": info}
+			retdata := gin.H{"data": info, "cond": cond, "multi": b}
 			if options.AfterHandler != nil {
 				err = options.AfterHandler(c, &retdata, err)
 			}
