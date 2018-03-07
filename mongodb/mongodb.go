@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"errors"
-	"gbird/config"
 	"gbird/logger"
 	"gbird/model"
 	"gopkg.in/mgo.v2"
@@ -13,9 +12,8 @@ import (
 )
 
 //Use 使用Mongo数据库
-func Use() {
-	mongodbstr := config.Config["mongodbHost"]
-	DbName = config.Config["mongodbDbName"]
+func Use(mongodbstr,DbName string) {
+	
 	if mongodbstr == "" {
 		logger.Infoln("未启用 Mongodb 数据库")
 		return
