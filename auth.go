@@ -17,8 +17,6 @@ type UserInterface interface {
 	UserID() string
 }
 
-
-
 //User 用户
 type User struct {
 	ID       string `json:"_id"`

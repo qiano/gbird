@@ -2,18 +2,20 @@ package gbird
 
 import (
 	"errors"
-	"fmt"
 	"gbird/logger"
 	"gbird/model"
-	"gbird/util"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron"
 	"github.com/tommy351/gin-sessions"
-	"io"
-	"mime/multipart"
-	"os"
-	"time"
 )
+
+//H h
+type H gin.H
+
+//Context 上下文
+type Context struct {
+	*gin.Context
+}
 
 //App 应用实例
 type App struct {
@@ -45,31 +47,6 @@ func NewApp(name string) *App {
 	})
 	app.TaskManager.Start()
 	return app
-}
-
-//SaveUploadedFile 保存上传的文件
-func SaveUploadedFile(file *multipart.FileHeader, flag string) (path string, err error) {
-	basedir := util.GetCurrDir()
-	savedir := "/assets/" + flag + "/"
-	if !util.IsExistFileOrDir(basedir + savedir) {
-		os.MkdirAll(basedir+savedir, 0777) //创建文件夹
-	}
-	tnow := fmt.Sprintf("%d", time.Now().UnixNano())
-	path = basedir + savedir + tnow + "_" + flag + "_" + file.Filename
-	src, err := file.Open()
-	if err != nil {
-		return
-	}
-	defer src.Close()
-
-	out, err := os.Create(path)
-	if err != nil {
-		return
-	}
-	defer out.Close()
-	io.Copy(out, src)
-
-	return
 }
 
 //CORSMiddleware 跨域
@@ -116,35 +93,9 @@ func GetSession(c *Context) sessions.Session {
 	return ss
 }
 
-//H h
-type H gin.H
-
-//Context 上下文
-type Context struct {
-	*gin.Context
-}
-
 //Use use
 func (a *App) Use(middleware ...func(*Context)) {
 	a.Engine.Use(BirdToGin(middleware...)...)
-}
-
-//BirdToGin 类型转换
-func BirdToGin(handlers ...func(c *Context)) []gin.HandlerFunc {
-	ginHandlers := make([]gin.HandlerFunc, 0, 0)
-	for _, handler := range handlers {
-		ginHandlers = append(ginHandlers, func(ginc *gin.Context) {
-			handler(&Context{Context: ginc})
-		})
-	}
-	return ginHandlers
-}
-
-//GinToBird 类型转换
-func GinToBird(handler func(c *gin.Context)) func(*Context) {
-	return func(gc *Context) {
-		handler(gc.Context)
-	}
 }
 
 //POST post
@@ -165,4 +116,22 @@ func (a *App) PUT(relativePath string, handlers ...func(c *Context)) {
 //DELETE delete
 func (a *App) DELETE(relativePath string, handlers ...func(c *Context)) {
 	a.Engine.DELETE(relativePath, BirdToGin(handlers...)...)
+}
+
+//BirdToGin 类型转换
+func BirdToGin(handlers ...func(c *Context)) []gin.HandlerFunc {
+	ginHandlers := make([]gin.HandlerFunc, 0, 0)
+	for _, handler := range handlers {
+		ginHandlers = append(ginHandlers, func(ginc *gin.Context) {
+			handler(&Context{Context: ginc})
+		})
+	}
+	return ginHandlers
+}
+
+//GinToBird 类型转换
+func GinToBird(handler func(c *gin.Context)) func(*Context) {
+	return func(gc *Context) {
+		handler(gc.Context)
+	}
 }
