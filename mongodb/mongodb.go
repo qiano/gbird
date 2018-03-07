@@ -2,15 +2,14 @@ package mongodb
 
 import (
 	"errors"
+	"gbird/config"
 	"gbird/logger"
+	"gbird/model"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
-	"gbird/config"
 	"strings"
 	"time"
-	"gbird/model"
-	"gbird"
 )
 
 //Use 使用Mongo数据库
@@ -79,7 +78,7 @@ func Insert(robj interface{}, userid string) (err error) {
 	}
 
 	model.SetValue(robj, "ID", bson.NewObjectId())
-	model.SetValue(robj, "Base", gbird.Base{
+	model.SetValue(robj, "Base", model.Base{
 		Creater:    userid,
 		CreateTime: time.Now(),
 		Updater:    userid,

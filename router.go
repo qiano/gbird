@@ -1,9 +1,8 @@
-package router
+package gbird
 
 import (
 	"encoding/json"
 	"errors"
-	"gbird"
 	"gbird/logger"
 	"gbird/model"
 	m "gbird/mongodb"
@@ -15,11 +14,9 @@ import (
 	"strconv"
 	"strings"
 )
-
 //Register 模型注册
-func Register(r *gbird.App, robj interface{}, beforeHandler func(c *gbird.Context, data interface{}) error, afterHandler func(c *gbird.Context, data *gbird.H, err error) error) {
+func (r *App)Register(robj interface{}, beforeHandler func(c *Context, data interface{}) error, afterHandler func(c *Context, data *H, err error) error) {
 	model.RegisterMetadata(robj)
-
 	tagval, err := model.MTagVal(robj, "router")
 	if err != nil {
 		logger.Infoln(reflect.TypeOf(robj).String() + "未指定 router ")
@@ -73,7 +70,7 @@ func Register(r *gbird.App, robj interface{}, beforeHandler func(c *gbird.Contex
 				idx = 1
 			}
 			if beforeHandler != nil {
-				beforeHandler(&gbird.Context{Context: c}, nil)
+				beforeHandler(&Context{Context: c}, nil)
 			}
 			datas, total, err := m.Query(robj, cond, idx, size, sort, fileds, false)
 			tp := 0.0
@@ -89,30 +86,30 @@ func Register(r *gbird.App, robj interface{}, beforeHandler func(c *gbird.Contex
 				"totalrecords": total,
 				"totalpages":   tp,
 				"page":         idx}}
-			h := (gbird.H)(retData)
+			h := (H)(retData)
 			if afterHandler != nil {
-				err = afterHandler(&gbird.Context{Context: c}, &h, err)
+				err = afterHandler(&Context{Context: c}, &h, err)
 			}
-			gbird.Ret(&gbird.Context{Context: c}, h, err, 500)
+			Ret(&Context{Context: c}, h, err, 500)
 		})
 
 		//ID查询
 		grp.GET("/id", func(c *gin.Context) {
 			val, _ := c.GetQuery("val")
 			if beforeHandler != nil {
-				err := beforeHandler(&gbird.Context{Context: c}, val)
+				err := beforeHandler(&Context{Context: c}, val)
 				if err != nil {
 
-					gbird.Ret(&gbird.Context{Context: c}, nil, err, 500)
+					Ret(&Context{Context: c}, nil, err, 500)
 					return
 				}
 			}
 			data, err := m.FindID(robj, bson.ObjectIdHex(val))
-			retdata := gbird.H{"data": data}
+			retdata := H{"data": data}
 			if afterHandler != nil {
-				err = afterHandler(&gbird.Context{Context: c}, &retdata, err)
+				err = afterHandler(&Context{Context: c}, &retdata, err)
 			}
-			gbird.Ret(&gbird.Context{Context: c}, retdata, err, 500)
+			Ret(&Context{Context: c}, retdata, err, 500)
 		})
 	}
 	if post {
@@ -124,26 +121,26 @@ func Register(r *gbird.App, robj interface{}, beforeHandler func(c *gbird.Contex
 			obj := reflect.New(objType).Interface()
 			json.Unmarshal([]byte(data), &obj)
 			var uid string
-			if gbird.GetCurUser != nil {
-				user, err := gbird.GetCurUser(&gbird.Context{Context: c})
+			if GetCurUser != nil {
+				user, err := GetCurUser(&Context{Context: c})
 				if err == nil {
 					uid = user.UserID()
 				}
 			}
 			if beforeHandler != nil {
-				err := beforeHandler(&gbird.Context{Context: c}, obj)
+				err := beforeHandler(&Context{Context: c}, obj)
 				if err != nil {
-					gbird.Ret(&gbird.Context{Context: c}, nil, err, 500)
+					Ret(&Context{Context: c}, nil, err, 500)
 					return
 				}
 			}
 			err = m.Insert(obj, uid)
 
-			retdata := gbird.H{"data": obj}
+			retdata := H{"data": obj}
 			if afterHandler != nil {
-				err = afterHandler(&gbird.Context{Context: c}, &retdata, err)
+				err = afterHandler(&Context{Context: c}, &retdata, err)
 			}
-			gbird.Ret(&gbird.Context{Context: c}, retdata, err, 500)
+			Ret(&Context{Context: c}, retdata, err, 500)
 		})
 	}
 	if put {
@@ -157,25 +154,25 @@ func Register(r *gbird.App, robj interface{}, beforeHandler func(c *gbird.Contex
 				b = false
 			}
 			var uid string
-			if gbird.GetCurUser != nil {
-				user, err := gbird.GetCurUser(&gbird.Context{Context: c})
+			if GetCurUser != nil {
+				user, err := GetCurUser(&Context{Context: c})
 				if err == nil {
 					uid = user.UserID()
 				}
 			}
 			if beforeHandler != nil {
-				err := beforeHandler(&gbird.Context{Context: c}, nil)
+				err := beforeHandler(&Context{Context: c}, nil)
 				if err != nil {
-					gbird.Ret(&gbird.Context{Context: c}, nil, err, 500)
+					Ret(&Context{Context: c}, nil, err, 500)
 					return
 				}
 			}
 			info, err := m.Update(robj, cond, doc, uid, b)
-			retdata := gbird.H{"data": info, "cond": cond, "multi": b}
+			retdata := H{"data": info, "cond": cond, "multi": b}
 			if afterHandler != nil {
-				err = afterHandler(&gbird.Context{Context: c}, &retdata, err)
+				err = afterHandler(&Context{Context: c}, &retdata, err)
 			}
-			gbird.Ret(&gbird.Context{Context: c}, retdata, err, 500)
+			Ret(&Context{Context: c}, retdata, err, 500)
 		})
 	}
 	if delete {
@@ -188,25 +185,25 @@ func Register(r *gbird.App, robj interface{}, beforeHandler func(c *gbird.Contex
 				b = false
 			}
 			var uid string
-			if gbird.GetCurUser != nil {
-				user, err := gbird.GetCurUser(&gbird.Context{Context: c})
+			if GetCurUser != nil {
+				user, err := GetCurUser(&Context{Context: c})
 				if err == nil {
 					uid = user.UserID()
 				}
 			}
 			if beforeHandler != nil {
-				err := beforeHandler(&gbird.Context{Context: c}, nil)
+				err := beforeHandler(&Context{Context: c}, nil)
 				if err != nil {
-					gbird.Ret(&gbird.Context{Context: c}, nil, err, 500)
+					Ret(&Context{Context: c}, nil, err, 500)
 					return
 				}
 			}
 			info, err := m.Remove(robj, cond, uid, b)
-			retdata := gbird.H{"data": info, "cond": cond, "multi": b}
+			retdata := H{"data": info, "cond": cond, "multi": b}
 			if afterHandler != nil {
-				err = afterHandler(&gbird.Context{Context: c}, &retdata, err)
+				err = afterHandler(&Context{Context: c}, &retdata, err)
 			}
-			gbird.Ret(&gbird.Context{Context: c}, retdata, err, 500)
+			Ret(&Context{Context: c}, retdata, err, 500)
 		})
 	}
 }

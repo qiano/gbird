@@ -90,15 +90,6 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
-//Base 模型基础字段
-type Base struct {
-	Creater    string    //创建人
-	CreateTime time.Time //创建时间
-	Updater    string    //创建人
-	UpdateTime time.Time //创建时间
-	IsDelete   bool      //是否已删除
-}
-
 //Ret 返回值
 func Ret(c *Context, data H, err error, code int) {
 	if err != nil {
@@ -123,4 +114,55 @@ var GetCurUser = func(r *Context) (UserInterface, error) {
 func GetSession(c *Context) sessions.Session {
 	ss := sessions.Get(c.Context)
 	return ss
+}
+
+//H h
+type H gin.H
+
+//Context 上下文
+type Context struct {
+	*gin.Context
+}
+
+//Use use
+func (a *App) Use(middleware ...func(*Context)) {
+	a.Engine.Use(BirdToGin(middleware...)...)
+}
+
+//BirdToGin 类型转换
+func BirdToGin(handlers ...func(c *Context)) []gin.HandlerFunc {
+	ginHandlers := make([]gin.HandlerFunc, 0, 0)
+	for _, handler := range handlers {
+		ginHandlers = append(ginHandlers, func(ginc *gin.Context) {
+			handler(&Context{Context: ginc})
+		})
+	}
+	return ginHandlers
+}
+
+//GinToBird 类型转换
+func GinToBird(handler func(c *gin.Context)) func(*Context) {
+	return func(gc *Context) {
+		handler(gc.Context)
+	}
+}
+
+//POST post
+func (a *App) POST(relativePath string, handlers ...func(c *Context)) {
+	a.Engine.POST(relativePath, BirdToGin(handlers...)...)
+}
+
+//GET get
+func (a *App) GET(relativePath string, handlers ...func(c *Context)) {
+	a.Engine.GET(relativePath, BirdToGin(handlers...)...)
+}
+
+//PUT put
+func (a *App) PUT(relativePath string, handlers ...func(c *Context)) {
+	a.Engine.PUT(relativePath, BirdToGin(handlers...)...)
+}
+
+//DELETE delete
+func (a *App) DELETE(relativePath string, handlers ...func(c *Context)) {
+	a.Engine.DELETE(relativePath, BirdToGin(handlers...)...)
 }

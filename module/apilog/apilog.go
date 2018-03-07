@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"gbird"
 	"gbird/logger"
+	"gbird/model"
 	m "gbird/mongodb"
-	"gbird/router"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
@@ -15,7 +15,7 @@ import (
 
 //Register 模型注册
 func Register(app *gbird.App) {
-	router.Register(app, &APILog{}, nil, nil)
+	app.Register(&APILog{}, nil, nil)
 }
 
 //APILog api調用日誌
@@ -31,7 +31,7 @@ type APILog struct {
 	IP                string //IP
 	UserID            string //用户ID
 	UserName          string //用户名
-	gbird.Base
+	model.Base
 }
 
 //Middleware API日志中间件

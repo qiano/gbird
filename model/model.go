@@ -5,11 +5,20 @@ import (
 	"fmt"
 	"gbird/logger"
 	"gopkg.in/mgo.v2/bson"
-
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
+
+//Base 模型基础字段
+type Base struct {
+	Creater    string    //创建人
+	CreateTime time.Time //创建时间
+	Updater    string    //创建人
+	UpdateTime time.Time //创建时间
+	IsDelete   bool      //是否已删除
+}
 
 //Metadatas 模型元数据
 var Metadatas map[string]map[string]FieldInfo
@@ -25,7 +34,7 @@ func init() {
 	Metadatas = make(map[string]map[string]FieldInfo)
 }
 
-var mtags = []string{"collection", "router"}                                         //模型标签
+var mtags = []string{"collection", "router"}                                          //模型标签
 var ftags = []string{"bson", "required", "default", "desc", "display", "ref", "enum"} //字段标签
 
 //RegisterMetadata 将模型注册到源数据信息中
