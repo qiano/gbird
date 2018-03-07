@@ -1,26 +1,26 @@
 package apilog
 
 import (
-	"gbird"
 	"bytes"
-	"gbird/auth"
-	"gbird/model"
+	"gbird"
 	"gbird/logger"
 	m "gbird/mongodb"
+	"gbird/router"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
+
 //Register 模型注册
-func Register(app *gbird.App){
-	app.Register(&APILog{}, nil)
+func Register(app *gbird.App) {
+	router.Register(app, &APILog{}, nil, nil)
 }
 
 //APILog api調用日誌
 type APILog struct {
-	ID                bson.ObjectId `bson:"_id"  collection:"apilog" urlname:"apilog"`
+	ID                bson.ObjectId `bson:"_id"  collection:"apilog" router:"apilog 0 0 0 0"`
 	RequestURL        string        //请求路径
 	RequestMethod     string        //调用方式
 	RequestDesc       string        //描述
@@ -31,13 +31,13 @@ type APILog struct {
 	IP                string //IP
 	UserID            string //用户ID
 	UserName          string //用户名
-	model.Base
+	gbird.Base
 }
 
 //Middleware API日志中间件
-func Middleware(getDesc func(string) string) gin.HandlerFunc {
+func Middleware(getDesc func(string) string) func(*gbird.Context) {
 	logger.Infoln("API日志：开启")
-	return func(c *gin.Context) {
+	return gbird.GinToBird(func(c *gin.Context) {
 		rbody, _ := ioutil.ReadAll(c.Request.Body)
 		c.Request.Body.Close()
 		bf := bytes.NewBuffer(rbody)
@@ -54,7 +54,7 @@ func Middleware(getDesc func(string) string) gin.HandlerFunc {
 			QueryStringParams: c.Request.URL.RawQuery,
 			RequestDesc:       desc}
 		var uid string
-		user, err := auth.GetCurUser(c)
+		user, err := gbird.GetCurUser(&gbird.Context{Context: c})
 		if err == nil {
 			uid = user.UserID()
 			log.UserID = user.UserID()
@@ -62,5 +62,5 @@ func Middleware(getDesc func(string) string) gin.HandlerFunc {
 		}
 		m.Insert(log, uid)
 		c.Next()
-	}
+	})
 }

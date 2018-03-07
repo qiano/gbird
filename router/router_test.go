@@ -1,4 +1,4 @@
-package gbird
+package router
 
 import (
 	"gbird/model"

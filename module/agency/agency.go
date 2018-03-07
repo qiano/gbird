@@ -1,6 +1,7 @@
 package agency
 
 import (
+	"gbird"
 	"gbird/logger"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
@@ -9,14 +10,14 @@ import (
 )
 
 //Middleware 代理中间件
-func Middleware(getMap func(*gin.Context) string) gin.HandlerFunc {
+func Middleware(getMap func(*gbird.Context) string) func(*gbird.Context) {
 	logger.Infoln("代理功能：开启")
-	return func(c *gin.Context) {
+	return gbird.GinToBird(func(c *gin.Context) {
 		if strings.ToLower(c.Request.Method) == "options" {
 			c.AbortWithStatus(204)
 			return
 		}
-		if target := getMap(c); len(target) > 0 {
+		if target := getMap(&gbird.Context{Context: c}); len(target) > 0 {
 			if c.Request.URL.RawQuery != "" {
 				target = target + "?" + c.Request.URL.RawQuery
 			}
@@ -50,5 +51,5 @@ func Middleware(getMap func(*gin.Context) string) gin.HandlerFunc {
 			return
 		}
 		c.Next()
-	}
+	})
 }

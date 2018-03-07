@@ -4,23 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"gbird/logger"
-	
+	"gopkg.in/mgo.v2/bson"
+
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 )
-
-
-
-//Base 模型基础字段
-type Base struct {
-	Creater    string    //创建人
-	CreateTime time.Time //创建时间
-	Updater    string    //创建人
-	UpdateTime time.Time //创建时间
-	IsDelete   bool      //是否已删除
-}
 
 //Metadatas 模型元数据
 var Metadatas map[string]map[string]FieldInfo
@@ -36,7 +25,7 @@ func init() {
 	Metadatas = make(map[string]map[string]FieldInfo)
 }
 
-var mtags = []string{"collection", "urlname"}                                         //模型标签
+var mtags = []string{"collection", "router"}                                         //模型标签
 var ftags = []string{"bson", "required", "default", "desc", "display", "ref", "enum"} //字段标签
 
 //RegisterMetadata 将模型注册到源数据信息中
@@ -118,7 +107,7 @@ func FTagVal(robj interface{}, field, tag string) (string, error) {
 	return "", errors.New("该方法只支持模型标签：" + strings.Join(ftags, ","))
 }
 
-//MTagVal 获取模型标签的值，只支持标签：collection, urlname
+//MTagVal 获取模型标签的值，只支持标签：collection, router
 func MTagVal(robj interface{}, tag string) (string, error) {
 	for _, val := range mtags {
 		if tag == val {
@@ -207,6 +196,23 @@ func GetValue(robj interface{}, field string) (string, interface{}) {
 		return "", f.Interface()
 	}
 	return "", nil
+}
+
+//GetID 获取ID
+func GetID(robj interface{}) (bson.ObjectId, error) {
+	refobj := reflect.ValueOf(robj).Elem()
+	typeOfT := refobj.Type()
+	for i := 0; i < refobj.NumField(); i++ {
+		bstr := typeOfT.Field(i).Tag.Get("bson")
+		if bstr == "_id" {
+			v := refobj.Field(i).String()
+			if len(v) == 0 {
+				return "", errors.New("模型：" + typeOfT.String() + ",对象 bson: _id 值为空")
+			}
+			return (bson.ObjectId)(v), nil
+		}
+	}
+	return "", errors.New("模型：" + typeOfT.String() + ",未设置TAG： bson: _id 设置")
 }
 
 //GetEnum  获取枚举值

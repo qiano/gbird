@@ -6,10 +6,33 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
+	"gbird/config"
 	"strings"
 	"time"
 	"gbird/model"
+	"gbird"
 )
+
+//Use 使用Mongo数据库
+func Use() {
+	mongodbstr := config.Config["mongodbHost"]
+	DbName = config.Config["mongodbDbName"]
+	if mongodbstr == "" {
+		logger.Infoln("未启用 Mongodb 数据库")
+		return
+	}
+	globalMgoSession, err := mgo.DialWithTimeout(mongodbstr, 10*time.Second)
+	if err != nil {
+		logger.Errorln("Mongodb：", err)
+		panic(err)
+	}
+	logger.Infoln("Mondodb连接成功：" + mongodbstr + "  " + DbName)
+	GlobalMgoSession = globalMgoSession
+	GlobalMgoSession.SetMode(mgo.Monotonic, true)
+	//default is 4096
+	GlobalMgoSession.SetPoolLimit(300)
+
+}
 
 //GlobalMgoSession 全局mongo连接
 var GlobalMgoSession *mgo.Session
@@ -56,7 +79,7 @@ func Insert(robj interface{}, userid string) (err error) {
 	}
 
 	model.SetValue(robj, "ID", bson.NewObjectId())
-	model.SetValue(robj, "Base", model.Base{
+	model.SetValue(robj, "Base", gbird.Base{
 		Creater:    userid,
 		CreateTime: time.Now(),
 		Updater:    userid,
@@ -214,6 +237,20 @@ func UpdateID(robj interface{}, id bson.ObjectId, data bson.M, userid string) (e
 	return
 }
 
+//UpsertID UpsertId
+func UpsertID(robj interface{}) (info *mgo.ChangeInfo, err error) {
+	col, err := getCollection(robj)
+	if err != nil {
+		return
+	}
+	UseCol(col, func(c *mgo.Collection) {
+		var id bson.ObjectId
+		id, err = model.GetID(robj)
+		info, err = c.UpsertId(id, robj)
+	})
+	return
+}
+
 //Count 计数
 func Count(robj interface{}, qjson string, containsDeleted bool) (count int, err error) {
 	col, err := getCollection(robj)
@@ -238,7 +275,7 @@ func DBRef(robj interface{}) (ref *mgo.DBRef, err error) {
 	if err != nil {
 		return nil, err
 	}
-	id, err := getMongoID(robj)
+	id, err := model.GetID(robj)
 	if err != nil {
 		return nil, err
 	}
@@ -311,22 +348,6 @@ func toQueryBson(robj interface{}, qjson string, containsDeleted bool) (bson.M, 
 		}
 	}
 	return qi, nil
-}
-
-func getMongoID(robj interface{}) (bson.ObjectId, error) {
-	refobj := reflect.ValueOf(robj).Elem()
-	typeOfT := refobj.Type()
-	for i := 0; i < refobj.NumField(); i++ {
-		bstr := typeOfT.Field(i).Tag.Get("bson")
-		if bstr == "_id" {
-			v := refobj.Field(i).String()
-			if len(v) == 0 {
-				return "", errors.New("模型：" + typeOfT.String() + ",对象 bson: _id 值为空")
-			}
-			return (bson.ObjectId)(v), nil
-		}
-	}
-	return "", errors.New("模型：" + typeOfT.String() + ",未设置TAG： bson: _id 设置")
 }
 
 //GetCollection 获取模型对应的集合

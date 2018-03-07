@@ -1,53 +1,25 @@
 package gbird
 
 import (
+	"errors"
 	"fmt"
-	"gbird/config"
 	"gbird/logger"
 	"gbird/model"
-	"gbird/mongodb"
 	"gbird/util"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron"
 	"github.com/tommy351/gin-sessions"
-	"gopkg.in/mgo.v2"
 	"io"
 	"mime/multipart"
 	"os"
 	"time"
 )
 
-//Module 接口
-type Module interface {
-	Register(a *App)
-}
-
 //App 应用实例
 type App struct {
 	*gin.Engine
 	TaskManager *cron.Cron
 	Name        string
-}
-
-//UseMongodb 使用Mongo数据库
-func (a *App) UseMongodb() {
-	mongodbstr := config.Config["mongodbHost"]
-	mongodb.DbName = config.Config["mongodbDbName"]
-	if mongodbstr == "" {
-		logger.Infoln("未启用 Mongodb 数据库")
-		return
-	}
-	globalMgoSession, err := mgo.DialWithTimeout(mongodbstr, 10*time.Second)
-	if err != nil {
-		logger.Errorln("Mongodb：", err)
-		panic(err)
-	}
-	logger.Infoln("Mondodb连接成功：" + mongodbstr + "  " + mongodb.DbName)
-	mongodb.GlobalMgoSession = globalMgoSession
-	mongodb.GlobalMgoSession.SetMode(mgo.Monotonic, true)
-	//default is 4096
-	mongodb.GlobalMgoSession.SetPoolLimit(300)
-
 }
 
 //NewApp 创建实例
@@ -66,9 +38,9 @@ func NewApp(name string) *App {
 	r.GET("/api/metadata", func(c *gin.Context) {
 		m, _ := c.GetQuery("model")
 		if m != "" {
-			Ret(c, gin.H{"data": model.Metadatas[m]}, nil, 0)
+			Ret(&Context{c}, H{"data": model.Metadatas[m]}, nil, 0)
 		} else {
-			Ret(c, gin.H{"data": model.Metadatas}, nil, 0)
+			Ret(&Context{c}, H{"data": model.Metadatas}, nil, 0)
 		}
 	})
 	app.TaskManager.Start()
@@ -116,4 +88,39 @@ func CORSMiddleware() gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+//Base 模型基础字段
+type Base struct {
+	Creater    string    //创建人
+	CreateTime time.Time //创建时间
+	Updater    string    //创建人
+	UpdateTime time.Time //创建时间
+	IsDelete   bool      //是否已删除
+}
+
+//Ret 返回值
+func Ret(c *Context, data H, err error, code int) {
+	if err != nil {
+		c.JSON(200, gin.H{"errcode": code, "errmsg": err.Error()})
+	} else {
+		c.JSON(200, data)
+	}
+}
+
+//GetCurUser 获取当前用户ID和名称
+var GetCurUser = func(r *Context) (UserInterface, error) {
+	ss := sessions.Get(r.Context)
+	user := ss.Get("user")
+	if user != nil {
+		u := user.(*User)
+		return u, nil
+	}
+	return nil, errors.New("未找到当前用户")
+}
+
+//GetSession getsession
+func GetSession(c *Context) sessions.Session {
+	ss := sessions.Get(c.Context)
+	return ss
 }
