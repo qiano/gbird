@@ -14,8 +14,9 @@ import (
 	"strconv"
 	"strings"
 )
+
 //Register 模型注册
-func (r *App)Register(robj interface{}, beforeHandler func(c *Context, data interface{}) error, afterHandler func(c *Context, data *H, err error) error) {
+func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data interface{}) error, afterHandler func(c *Context, data interface{}, err error) (interface{}, error)) {
 	model.RegisterMetadata(robj)
 	tagval, err := model.MTagVal(robj, "router")
 	if err != nil {
@@ -78,38 +79,47 @@ func (r *App)Register(robj interface{}, beforeHandler func(c *Context, data inte
 				tp = math.Ceil((float64)(total) / (float64)(size))
 			}
 
-			retData := gin.H{"data": gin.H{
+			retData := H{
 				"range":        r,
 				"sort":         sort,
 				"size":         size,
 				"list":         datas,
 				"totalrecords": total,
 				"totalpages":   tp,
-				"page":         idx}}
-			h := (H)(retData)
+				"page":         idx}
+			var ret interface{}
 			if afterHandler != nil {
-				err = afterHandler(&Context{Context: c}, &h, err)
+				ret, err = afterHandler(&Context{Context: c}, &retData, err)
 			}
-			Ret(&Context{Context: c}, h, err, 500)
+			gc := Context{c}
+			if err != nil {
+				gc.RetError(err, 500)
+			} else {
+				gc.Ret(ret)
+			}
 		})
 
 		//ID查询
 		grp.GET("/id", func(c *gin.Context) {
+			gc := Context{c}
 			val, _ := c.GetQuery("val")
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, val)
 				if err != nil {
-
-					Ret(&Context{Context: c}, nil, err, 500)
+					gc.RetError(err, 500)
 					return
 				}
 			}
 			data, err := m.FindID(robj, bson.ObjectIdHex(val))
-			retdata := H{"data": data}
+			var ret interface{} = data
 			if afterHandler != nil {
-				err = afterHandler(&Context{Context: c}, &retdata, err)
+				ret, err = afterHandler(&Context{Context: c}, &data, err)
 			}
-			Ret(&Context{Context: c}, retdata, err, 500)
+			if err != nil {
+				gc.RetError(err, 500)
+			} else {
+				gc.Ret(ret)
+			}
 		})
 	}
 	if post {
@@ -130,22 +140,27 @@ func (r *App)Register(robj interface{}, beforeHandler func(c *Context, data inte
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, obj)
 				if err != nil {
-					Ret(&Context{Context: c}, nil, err, 500)
+					gc := Context{c}
+					gc.RetError(err, 500)
 					return
 				}
 			}
 			err = m.Insert(obj, uid)
-
-			retdata := H{"data": obj}
 			if afterHandler != nil {
-				err = afterHandler(&Context{Context: c}, &retdata, err)
+				obj, err = afterHandler(&Context{Context: c}, obj, err)
 			}
-			Ret(&Context{Context: c}, retdata, err, 500)
+			gc := Context{c}
+			if err != nil {
+				gc.RetError(err, 500)
+			} else {
+				gc.Ret(obj)
+			}
 		})
 	}
 	if put {
 		//修改
 		grp.PUT("", func(c *gin.Context) {
+			gc := Context{c}
 			cond := c.PostForm("cond")
 			doc := c.PostForm("doc")
 			multi := c.PostForm("multi")
@@ -163,21 +178,27 @@ func (r *App)Register(robj interface{}, beforeHandler func(c *Context, data inte
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, nil)
 				if err != nil {
-					Ret(&Context{Context: c}, nil, err, 500)
+					gc.RetError(err, 500)
 					return
 				}
 			}
 			info, err := m.Update(robj, cond, doc, uid, b)
-			retdata := H{"data": info, "cond": cond, "multi": b}
+			retdata := H{"result": info, "cond": cond, "multi": b}
+			var ret interface{} = retdata
 			if afterHandler != nil {
-				err = afterHandler(&Context{Context: c}, &retdata, err)
+				ret, err = afterHandler(&Context{Context: c}, &retdata, err)
 			}
-			Ret(&Context{Context: c}, retdata, err, 500)
+			if err != nil {
+				gc.RetError(err, 500)
+			} else {
+				gc.Ret(ret)
+			}
 		})
 	}
 	if delete {
 		//删除
 		grp.DELETE("", func(c *gin.Context) {
+			gc := Context{c}
 			cond := c.PostForm("cond")
 			multi := c.PostForm("multi")
 			b, err := strconv.ParseBool(multi)
@@ -194,16 +215,21 @@ func (r *App)Register(robj interface{}, beforeHandler func(c *Context, data inte
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, nil)
 				if err != nil {
-					Ret(&Context{Context: c}, nil, err, 500)
+					gc.RetError(err, 500)
 					return
 				}
 			}
 			info, err := m.Remove(robj, cond, uid, b)
 			retdata := H{"data": info, "cond": cond, "multi": b}
+			var ret interface{} = retdata
 			if afterHandler != nil {
-				err = afterHandler(&Context{Context: c}, &retdata, err)
+				ret, err = afterHandler(&Context{Context: c}, &retdata, err)
 			}
-			Ret(&Context{Context: c}, retdata, err, 500)
+			if err != nil {
+				gc.RetError(err, 500)
+			} else {
+				gc.Ret(ret)
+			}
 		})
 	}
 }

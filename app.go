@@ -40,9 +40,9 @@ func NewApp(name string) *App {
 	r.GET("/api/metadata", func(c *gin.Context) {
 		m, _ := c.GetQuery("model")
 		if m != "" {
-			Ret(&Context{c}, H{"data": model.Metadatas[m]}, nil, 0)
+			c.JSON(200, H{"data": model.Metadatas[m]})
 		} else {
-			Ret(&Context{c}, H{"data": model.Metadatas}, nil, 0)
+			c.JSON(200, H{"data": model.Metadatas})
 		}
 	})
 	app.TaskManager.Start()
@@ -67,13 +67,14 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
-//Ret 返回值
-func Ret(c *Context, data H, err error, code int) {
-	if err != nil {
-		c.JSON(200, gin.H{"errcode": code, "errmsg": err.Error()})
-	} else {
-		c.JSON(200, data)
-	}
+//Ret 返回数据
+func (c *Context) Ret(data interface{}) {
+	c.JSON(200, H{"data": data})
+}
+
+//RetError 返回错误
+func (c *Context) RetError(err error, errcode int) {
+	c.Ret(H{"errcode": errcode, "errmsg": err.Error()})
 }
 
 //GetCurUser 获取当前用户ID和名称

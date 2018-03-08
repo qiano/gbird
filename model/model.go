@@ -80,7 +80,8 @@ func Metadata(robj interface{}) (map[string]FieldInfo, error) {
 	key := getKey(robj)
 	v, ok := Metadatas[key]
 	if !ok {
-		return nil, errors.New("model:" + key + ",未读取到模型元数据")
+		RegisterMetadata(robj)
+		return Metadata(robj)
 	}
 	return v, nil
 }

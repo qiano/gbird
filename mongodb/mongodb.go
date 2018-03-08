@@ -12,8 +12,8 @@ import (
 )
 
 //Use 使用Mongo数据库
-func Use(mongodbstr,DbName string) {
-	
+func Use(mongodbstr,dbName string) {
+	DbName=dbName
 	if mongodbstr == "" {
 		logger.Infoln("未启用 Mongodb 数据库")
 		return
@@ -158,7 +158,7 @@ func FindOne(robj interface{}, qjson, sort string) (interface{}, error) {
 		return nil, err
 	}
 	if total == 0 {
-		return nil, errors.New("一个都没有")
+		return nil, errors.New("未找到匹配的数据")
 	}
 	arr := model.ToSlice(data)
 	return arr[0], nil
