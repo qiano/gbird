@@ -2,9 +2,9 @@ package mongodb
 
 import (
 	"errors"
+	"gbird/model"
 	"reflect"
 	"strconv"
-	"gbird/model"
 )
 
 //ModelValidation 模型验证
@@ -63,14 +63,18 @@ func FieldValidation(robj interface{}, fieldname string) error {
 //UpdateValidation  模型更新值验证
 func UpdateValidation(robj interface{}, u map[string]interface{}) (err error) {
 	for key, val := range u {
+
 		if reflect.TypeOf(val) == reflect.TypeOf(u) && val != nil {
 			err = UpdateValidation(robj, val.(map[string]interface{}))
 			if err != nil {
 				return
 			}
 		} else if reflect.TypeOf(val).Kind() == reflect.Slice {
-			temp := val.([]interface{})
+			temp := model.ToSlice(val)
 			for i := 0; i < len(temp); i++ {
+				if reflect.TypeOf(temp[i]).Kind() == reflect.Struct {
+					return
+				}
 				v := temp[i].(map[string]interface{})
 				err = UpdateValidation(robj, v)
 				if err != nil {
