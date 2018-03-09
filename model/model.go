@@ -34,7 +34,7 @@ func init() {
 	Metadatas = make(map[string]map[string]FieldInfo)
 }
 
-var mtags = []string{"collection", "router"}                                          //模型标签
+var mtags = []string{"collection", "router","sole"}                                          //模型标签
 var ftags = []string{"bson", "required", "default", "desc", "display", "ref", "enum"} //字段标签
 
 //RegisterMetadata 将模型注册到源数据信息中
@@ -133,7 +133,7 @@ func MTagVal(robj interface{}, tag string) (string, error) {
 					}
 				}
 			}
-			return "", errors.New("model:" + getKey(robj) + ",未设置标签:" + tag)
+			return "", nil
 		}
 	}
 	return "", errors.New("该方法只支持模型标签：" + strings.Join(mtags, ","))

@@ -73,7 +73,14 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if beforeHandler != nil {
 				beforeHandler(&Context{Context: c}, nil)
 			}
-			datas, total, err := m.Query(robj, cond, idx, size, sort, fileds, false)
+			gc := Context{c}
+
+			qi, err := m.ToBson(cond)
+			if err != nil {
+				gc.RetError(err, 500)
+				return
+			}
+			datas, total, err := m.Query(robj, qi, idx, size, sort, fileds, false)
 			tp := 0.0
 			if size != 0 {
 				tp = math.Ceil((float64)(total) / (float64)(size))
@@ -91,7 +98,6 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if afterHandler != nil {
 				ret, err = afterHandler(&Context{Context: c}, &retData, err)
 			}
-			gc := Context{c}
 			if err != nil {
 				gc.RetError(err, 500)
 			} else {
@@ -182,7 +188,17 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 					return
 				}
 			}
-			info, err := m.Update(robj, cond, doc, uid, b)
+			qu, err := m.ToBson(cond)
+			if err != nil {
+				gc.RetError(err, 500)
+				return
+			}
+			do, err := m.ToBson(doc)
+			if err != nil {
+				gc.RetError(err, 500)
+				return
+			}
+			info, err := m.Update(robj, qu, do, uid, b)
 			retdata := H{"result": info, "cond": cond, "multi": b}
 			var ret interface{} = retdata
 			if afterHandler != nil {
@@ -219,7 +235,12 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 					return
 				}
 			}
-			info, err := m.Remove(robj, cond, uid, b)
+			qu,err:=m.ToBson(cond)
+			if err != nil {
+				gc.RetError(err, 500)
+				return
+			}
+			info, err := m.Remove(robj, qu, uid, b)
 			retdata := H{"data": info, "cond": cond, "multi": b}
 			var ret interface{} = retdata
 			if afterHandler != nil {

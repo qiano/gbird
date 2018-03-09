@@ -2,9 +2,12 @@ package mongodb
 
 import (
 	"errors"
+	"gbird/logger"
 	"gbird/model"
+	"gopkg.in/mgo.v2/bson"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 //ModelValidation 模型验证
@@ -58,6 +61,28 @@ func FieldValidation(robj interface{}, fieldname string) error {
 		return errors.New("model:" + t.String() + ",字段" + fieldname + "，TAG:enums,非法值")
 	}
 	return nil
+}
+
+//SoleValidation 唯一性验证
+func SoleValidation(robj interface{}) (bool, error) {
+	tval, err := model.MTagVal(robj, "sole")
+	if err != nil {
+		logger.Fatalln(err)
+	}
+	if tval == "" {
+		return true, nil
+	}
+	qbson := bson.M{}
+	for _, val := range strings.Split(tval, " ") {
+		v, _ := model.GetValue(robj, val)
+		if v != "" {
+			qbson[val] = v
+		}
+	}
+	if count, err := Count(robj, qbson, false); err == nil && count > 0 {
+		return false, errors.New("唯一性验证结果：数据已存在，查询字段：" + tval)
+	}
+	return true, nil
 }
 
 //UpdateValidation  模型更新值验证

@@ -7,7 +7,6 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
-	"strings"
 	"time"
 )
 
@@ -89,28 +88,28 @@ func Insert(robj interface{}, userid string) (err error) {
 }
 
 //Remove 删除
-func Remove(robj interface{}, qjson string, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
+func Remove(robj interface{}, qi bson.M, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
 	UseCol(col, func(c *mgo.Collection) {
-		info, err = Update(robj, qjson, `{"base.isdelete":"true"}`, userid, batch)
+		info, err = Update(robj, qi, bson.M{"base.isdelete":true}, userid, batch)
 	})
 	return
 }
 
 //Query 查询
-func Query(robj interface{}, qjson string, page, pageSize int, sort string, fields string, containsDeleted bool) (datas interface{}, total int, err error) {
+func Query(robj interface{}, q bson.M, page, pageSize int, sort string, fields string, containsDeleted bool) (datas interface{}, total int, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
-	qi, err := toQueryBson(robj, qjson, containsDeleted)
+	qi, err := toQueryBson(robj, q, containsDeleted)
 	if err != nil {
 		return
 	}
-	fd, err := toBson(fields)
+	fd, err := ToBson(fields)
 	if err != nil {
 		return
 	}
@@ -152,8 +151,8 @@ func FindID(robj interface{}, id bson.ObjectId) (interface{}, error) {
 }
 
 //FindOne 查找一个
-func FindOne(robj interface{}, qjson, sort string) (interface{}, error) {
-	data, total, err := Query(robj, qjson, 1, 1, "", sort, false)
+func FindOne(robj interface{}, qi bson.M, sort string) (interface{}, error) {
+	data, total, err := Query(robj, qi, 1, 1, "", sort, false)
 	if err != nil {
 		return nil, err
 	}
@@ -165,8 +164,8 @@ func FindOne(robj interface{}, qjson, sort string) (interface{}, error) {
 }
 
 //FindAll 查找所有
-func FindAll(robj interface{}, qjson, sort string) ([]interface{}, error) {
-	data, total, err := Query(robj, qjson, 0, 0, "", sort, false)
+func FindAll(robj interface{}, qi bson.M, sort string) ([]interface{}, error) {
+	data, total, err := Query(robj, qi, 0, 0, "", sort, false)
 	if err != nil {
 		return nil, err
 	}
@@ -178,19 +177,16 @@ func FindAll(robj interface{}, qjson, sort string) ([]interface{}, error) {
 }
 
 //Update 更新记录
-func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
+func Update(robj interface{}, q,u bson.M,  userid string, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return
 	}
-	q, err := toQueryBson(robj, qjson, false)
+	qi, err := toQueryBson(robj, q, false)
 	if err != nil {
 		return
 	}
-	u, err := toBson(ujson)
-	if err != nil {
-		return
-	}
+	
 	err = UpdateValidation(robj, u)
 	if err != nil {
 		return
@@ -202,10 +198,10 @@ func Update(robj interface{}, qjson, ujson string, userid string, batch bool) (i
 	UseCol(col, func(c *mgo.Collection) {
 
 		if batch {
-			if info, err = c.UpdateAll(q, up); err != nil {
+			if info, err = c.UpdateAll(qi, up); err != nil {
 			}
 		} else {
-			if err = c.Update(q, up); err != nil {
+			if err = c.Update(qi, up); err != nil {
 				info.Updated = 1
 			}
 		}
@@ -249,13 +245,13 @@ func UpsertID(robj interface{}) (info *mgo.ChangeInfo, err error) {
 }
 
 //Count 计数
-func Count(robj interface{}, qjson string, containsDeleted bool) (count int, err error) {
+func Count(robj interface{}, qi bson.M, containsDeleted bool) (count int, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return 0, err
 	}
 	var b bson.M
-	b, err = toQueryBson(robj, qjson, containsDeleted)
+	b, err = toQueryBson(robj, qi, containsDeleted)
 	if err != nil {
 		return 0, err
 	}
@@ -289,63 +285,7 @@ func FindRef(robj interface{}, ref *mgo.DBRef) (interface{}, error) {
 	return temp, err
 }
 
-func toLower(q map[string]interface{}) bson.M {
-	ret := make(bson.M)
-	for key, val := range q {
-		if reflect.TypeOf(val) == reflect.TypeOf(q) && val != nil {
-			val = toLower(val.(map[string]interface{}))
-		} else if reflect.TypeOf(val).Kind() == reflect.Slice {
-			arr := make([]map[string]interface{}, 0, 0)
-			temp := val.([]interface{})
-			for i := 0; i < len(temp); i++ {
-				v := temp[i].(map[string]interface{})
-				v = toLower(v)
-				arr = append(arr, v)
-			}
-			val = arr
 
-		}
-		ret[strings.ToLower(key)] = val
-	}
-	return ret
-}
-
-func toBson(json string) (bson.M, error) {
-	if len(json) == 0 {
-		return nil, nil
-	}
-	var qi bson.M
-	if err := bson.UnmarshalJSON([]byte(json), &qi); err != nil {
-		return nil, errors.New("json=" + json + ",查询mongodb 查询 json错误 " + err.Error())
-	}
-
-	return toLower(qi), nil
-}
-
-func toQueryBson(robj interface{}, qjson string, containsDeleted bool) (bson.M, error) {
-	qi, err := toBson(qjson)
-	if err != nil {
-		return qi, err
-	}
-	//objectid处理
-	for key, val := range qi {
-		ty, kind := model.GetTypeKind(robj, key)
-		if ty == "ObjectId" && kind == "string" {
-			qi[key] = bson.ObjectIdHex(val.(string))
-		}
-	}
-
-	if !containsDeleted {
-		if qi == nil {
-			qi = bson.M{"base.isdelete": false}
-		} else {
-			if _, ok := qi["base.isdelete"]; !ok {
-				qi["base.isdelete"] = false
-			}
-		}
-	}
-	return qi, nil
-}
 
 //GetCollection 获取模型对应的集合
 func getCollection(robj interface{}) (string, error) {

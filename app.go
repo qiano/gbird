@@ -74,6 +74,7 @@ func (c *Context) Ret(data interface{}) {
 
 //RetError 返回错误
 func (c *Context) RetError(err error, errcode int) {
+	logger.Fatalln(err)
 	c.Ret(H{"errcode": errcode, "errmsg": err.Error()})
 }
 
