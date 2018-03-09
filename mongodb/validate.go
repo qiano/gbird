@@ -21,7 +21,7 @@ func ModelValidation(robj interface{}) (bool, error) {
 			return false, err
 		}
 	}
-	return true, nil
+	return SoleValidation(robj)
 }
 
 //FieldValidation 字段验证
