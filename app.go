@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron"
 	"github.com/tommy351/gin-sessions"
+	"strconv"
 )
 
 //H h
@@ -68,8 +69,14 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 //Ret 返回数据
-func (c *Context) Ret(data interface{}) {
-	c.JSON(200, H{"data": data})
+func (c *Context) Ret(datas ...interface{}) {
+	r := H{"data": datas[0]}
+	if len(datas) > 1 {
+		for i := 1; i < len(datas); i++ {
+			r["data"+strconv.Itoa(i)] = datas[i]
+		}
+	}
+	c.JSON(200, r)
 }
 
 //RetError 返回错误
