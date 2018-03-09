@@ -29,10 +29,10 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 		panic(errors.New(reflect.TypeOf(robj).String() + "router设置异常"))
 	}
 	var (
-		get    = true
-		post   = true
-		put    = true
-		delete = true
+		get    = false
+		post   = false
+		put    = false
+		delete = false
 	)
 	if len(rs) == 5 {
 		get = rs[1] == "1"
@@ -235,7 +235,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 					return
 				}
 			}
-			qu,err:=m.ToBson(cond)
+			qu, err := m.ToBson(cond)
 			if err != nil {
 				gc.RetError(err, 500)
 				return
