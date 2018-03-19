@@ -94,7 +94,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 				"totalrecords": total,
 				"totalpages":   tp,
 				"page":         idx}
-			var ret interface{}
+			var ret interface{} = retData
 			if afterHandler != nil {
 				ret, err = afterHandler(&Context{Context: c}, &retData, err)
 			}
