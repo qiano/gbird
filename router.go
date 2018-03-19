@@ -77,7 +77,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 
 			qi, err := m.ToBson(cond)
 			if err != nil {
-				gc.RetError(err, 500)
+				gc.RetError(err)
 				return
 			}
 			datas, total, err := m.Query(robj, qi, idx, size, sort, fileds, false)
@@ -99,7 +99,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 				ret, err = afterHandler(&Context{Context: c}, &retData, err)
 			}
 			if err != nil {
-				gc.RetError(err, 500)
+				gc.RetError(err)
 			} else {
 				gc.Ret(ret)
 			}
@@ -112,7 +112,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, val)
 				if err != nil {
-					gc.RetError(err, 500)
+					gc.RetError(err)
 					return
 				}
 			}
@@ -122,7 +122,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 				ret, err = afterHandler(&Context{Context: c}, &data, err)
 			}
 			if err != nil {
-				gc.RetError(err, 500)
+				gc.RetError(err)
 			} else {
 				gc.Ret(ret)
 			}
@@ -147,7 +147,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 				err := beforeHandler(&Context{Context: c}, obj)
 				if err != nil {
 					gc := Context{c}
-					gc.RetError(err, 500)
+					gc.RetError(err)
 					return
 				}
 			}
@@ -157,7 +157,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			}
 			gc := Context{c}
 			if err != nil {
-				gc.RetError(err, 500)
+				gc.RetError(err)
 			} else {
 				gc.Ret(obj)
 			}
@@ -184,18 +184,18 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, nil)
 				if err != nil {
-					gc.RetError(err, 500)
+					gc.RetError(err)
 					return
 				}
 			}
 			qu, err := m.ToBson(cond)
 			if err != nil {
-				gc.RetError(err, 500)
+				gc.RetError(err)
 				return
 			}
 			do, err := m.ToBson(doc)
 			if err != nil {
-				gc.RetError(err, 500)
+				gc.RetError(err)
 				return
 			}
 			info, err := m.Update(robj, qu, do, uid, b)
@@ -205,7 +205,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 				ret, err = afterHandler(&Context{Context: c}, &retdata, err)
 			}
 			if err != nil {
-				gc.RetError(err, 500)
+				gc.RetError(err)
 			} else {
 				gc.Ret(ret)
 			}
@@ -231,13 +231,13 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, nil)
 				if err != nil {
-					gc.RetError(err, 500)
+					gc.RetError(err)
 					return
 				}
 			}
 			qu, err := m.ToBson(cond)
 			if err != nil {
-				gc.RetError(err, 500)
+				gc.RetError(err)
 				return
 			}
 			info, err := m.Remove(robj, qu, uid, b)
@@ -247,7 +247,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 				ret, err = afterHandler(&Context{Context: c}, &retdata, err)
 			}
 			if err != nil {
-				gc.RetError(err, 500)
+				gc.RetError(err)
 			} else {
 				gc.Ret(ret)
 			}

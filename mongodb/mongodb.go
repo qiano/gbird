@@ -11,8 +11,8 @@ import (
 )
 
 //Use 使用Mongo数据库
-func Use(mongodbstr,dbName string) {
-	DbName=dbName
+func Use(mongodbstr, dbName string) {
+	DbName = dbName
 	if mongodbstr == "" {
 		logger.Infoln("未启用 Mongodb 数据库")
 		return
@@ -94,7 +94,7 @@ func Remove(robj interface{}, qi bson.M, userid string, batch bool) (info *mgo.C
 		return
 	}
 	UseCol(col, func(c *mgo.Collection) {
-		info, err = Update(robj, qi, bson.M{"base.isdelete":true}, userid, batch)
+		info, err = Update(robj, qi, bson.M{"base.isdelete": true}, userid, batch)
 	})
 	return
 }
@@ -151,8 +151,8 @@ func FindID(robj interface{}, id bson.ObjectId) (interface{}, error) {
 }
 
 //FindOne 查找一个
-func FindOne(robj interface{}, qi bson.M, sort string) (interface{}, error) {
-	data, total, err := Query(robj, qi, 1, 1, "", sort, false)
+func FindOne(robj interface{}, qi bson.M) (interface{}, error) {
+	data, total, err := Query(robj, qi, 1, 1, "", "", false)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func FindAll(robj interface{}, qi bson.M, sort string) ([]interface{}, error) {
 }
 
 //Update 更新记录
-func Update(robj interface{}, q,u bson.M,  userid string, batch bool) (info *mgo.ChangeInfo, err error) {
+func Update(robj interface{}, q, u bson.M, userid string, batch bool) (info *mgo.ChangeInfo, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return
@@ -186,7 +186,7 @@ func Update(robj interface{}, q,u bson.M,  userid string, batch bool) (info *mgo
 	if err != nil {
 		return
 	}
-	
+
 	err = UpdateValidation(robj, u)
 	if err != nil {
 		return
@@ -236,9 +236,10 @@ func UpsertID(robj interface{}) (info *mgo.ChangeInfo, err error) {
 	if err != nil {
 		return
 	}
+	id, err := model.GetID(robj)
+	
+
 	UseCol(col, func(c *mgo.Collection) {
-		var id bson.ObjectId
-		id, err = model.GetID(robj)
 		info, err = c.UpsertId(id, robj)
 	})
 	return
@@ -284,8 +285,6 @@ func FindRef(robj interface{}, ref *mgo.DBRef) (interface{}, error) {
 	err := session.DB(DbName).FindRef(ref).One(temp)
 	return temp, err
 }
-
-
 
 //GetCollection 获取模型对应的集合
 func getCollection(robj interface{}) (string, error) {

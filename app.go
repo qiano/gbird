@@ -80,9 +80,9 @@ func (c *Context) Ret(datas ...interface{}) {
 }
 
 //RetError 返回错误
-func (c *Context) RetError(err error, errcode int) {
+func (c *Context) RetError(err error) {
 	logger.Fatalln(err)
-	c.Ret(H{"errcode": errcode, "errmsg": err.Error()})
+	c.JSON(500, H{"errmsg": err.Error()})
 }
 
 //GetCurUser 获取当前用户ID和名称

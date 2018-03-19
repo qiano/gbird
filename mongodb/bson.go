@@ -43,6 +43,7 @@ func toLower(q map[string]interface{}) bson.M {
 
 //ToQueryBson 为查询条件附加默认查询配置
 func toQueryBson(robj interface{}, qi bson.M, containsDeleted bool) (bson.M, error) {
+	qi=toLower(qi)
 	//objectid处理
 	for key, val := range qi {
 		ty, kind := model.GetTypeKind(robj, key)
