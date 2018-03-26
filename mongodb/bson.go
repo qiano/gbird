@@ -47,7 +47,7 @@ func toQueryBson(robj interface{}, qi bson.M, containsDeleted bool) (bson.M, err
 	//objectid处理
 	for key, val := range qi {
 		ty, kind := model.GetTypeKind(robj, key)
-		if ty == "ObjectId" && kind == "string" {
+		if ty == "ObjectId" && kind == "string" && key=="id"{
 			qi[key] = bson.ObjectIdHex(val.(string))
 		}
 	}

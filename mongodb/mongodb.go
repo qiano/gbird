@@ -103,14 +103,17 @@ func Remove(robj interface{}, qi bson.M, userid string, batch bool) (info *mgo.C
 func Query(robj interface{}, q bson.M, page, pageSize int, sort string, fields string, containsDeleted bool) (datas interface{}, total int, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
+		logger.Fatalln(err)
 		return
 	}
 	qi, err := toQueryBson(robj, q, containsDeleted)
 	if err != nil {
+		logger.Fatalln(err)
 		return
 	}
 	fd, err := ToBson(fields)
 	if err != nil {
+		logger.Fatalln(err)
 		return
 	}
 	if sort == "" {
@@ -124,7 +127,8 @@ func Query(robj interface{}, q bson.M, page, pageSize int, sort string, fields s
 	UseCol(col, func(c *mgo.Collection) {
 		qe := c.Find(qi).Sort(sort).Select(fd)
 		if total, err = qe.Count(); err != nil {
-			return
+		logger.Fatalln(err)
+		return
 		}
 		if page == 0 {
 			qe.All(temps.Interface())
