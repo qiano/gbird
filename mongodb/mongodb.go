@@ -117,7 +117,7 @@ func Query(robj interface{}, q bson.M, page, pageSize int, sort string, fields s
 		return
 	}
 	if sort == "" {
-		sort = "-updatetime -createtime"
+		sort = "-base.updatetime -base.createtime"
 	}
 	refobj := reflect.ValueOf(robj).Elem()
 	t := refobj.Type()
