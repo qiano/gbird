@@ -49,9 +49,6 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 				r = "page"
 			}
 			sort, _ := c.GetQuery("sort")
-			if sort == "" {
-				sort = "-updatetime -createtime"
-			}
 			cond, _ := c.GetQuery("cond")
 			fileds, _ := c.GetQuery("fields")
 			idx, size := 0, 0

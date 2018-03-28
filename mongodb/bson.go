@@ -27,11 +27,20 @@ func toLower(q map[string]interface{}) bson.M {
 			val = toLower(val.(map[string]interface{}))
 		} else if reflect.TypeOf(val).Kind() == reflect.Slice {
 			arr := make([]map[string]interface{}, 0, 0)
-			temp := val.([]interface{})
-			for i := 0; i < len(temp); i++ {
-				v := temp[i].(map[string]interface{})
-				v = toLower(v)
-				arr = append(arr, v)
+			if reflect.TypeOf(val).String() == "[]map[string]interface {}" {
+				temp := val.([]map[string]interface{})
+				for i := 0; i < len(temp); i++ {
+					v := temp[i]
+					v = toLower(v)
+					arr = append(arr, v)
+				}
+			} else {
+				temp := val.([]interface{})
+				for i := 0; i < len(temp); i++ {
+					v := temp[i].(map[string]interface{})
+					v = toLower(v)
+					arr = append(arr, v)
+				}
 			}
 			val = arr
 
@@ -43,11 +52,11 @@ func toLower(q map[string]interface{}) bson.M {
 
 //ToQueryBson 为查询条件附加默认查询配置
 func toQueryBson(robj interface{}, qi bson.M, containsDeleted bool) (bson.M, error) {
-	qi=toLower(qi)
+	qi = toLower(qi)
 	//objectid处理
 	for key, val := range qi {
 		ty, kind := model.GetTypeKind(robj, key)
-		if ty == "ObjectId" && kind == "string" && key=="id"{
+		if ty == "ObjectId" && kind == "string" && key == "id" {
 			qi[key] = bson.ObjectIdHex(val.(string))
 		}
 	}
