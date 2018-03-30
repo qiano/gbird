@@ -36,6 +36,10 @@ func toLower(q map[string]interface{}) bson.M {
 				}
 			} else {
 				temp := val.([]interface{})
+				if reflect.TypeOf(val).String() != "map[string]interface {}" {
+					ret[strings.ToLower(key)] = val
+					continue
+				}
 				for i := 0; i < len(temp); i++ {
 					v := temp[i].(map[string]interface{})
 					v = toLower(v)
@@ -43,7 +47,6 @@ func toLower(q map[string]interface{}) bson.M {
 				}
 			}
 			val = arr
-
 		}
 		ret[strings.ToLower(key)] = val
 	}

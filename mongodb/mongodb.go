@@ -75,12 +75,15 @@ func Insert(robj interface{}, userid string) (err error) {
 	}
 
 	model.SetValue(robj, "ID", bson.NewObjectId())
-	model.SetValue(robj, "Base", model.Base{
-		Creater:    userid,
-		CreateTime: time.Now(),
-		Updater:    userid,
-		UpdateTime: time.Now(),
-	})
+	_, bval := model.GetValue(robj, "Base")
+	if bval == nil {
+		model.SetValue(robj, "Base", model.Base{
+			Creater:    userid,
+			CreateTime: time.Now(),
+			Updater:    userid,
+			UpdateTime: time.Now(),
+		})
+	}
 	UseCol(col, func(c *mgo.Collection) {
 		err = c.Insert(&robj)
 	})
@@ -127,8 +130,8 @@ func Query(robj interface{}, q bson.M, page, pageSize int, sort string, fields s
 	UseCol(col, func(c *mgo.Collection) {
 		qe := c.Find(qi).Sort(sort).Select(fd)
 		if total, err = qe.Count(); err != nil {
-		logger.Fatalln(err)
-		return
+			logger.Fatalln(err)
+			return
 		}
 		if page == 0 {
 			qe.All(temps.Interface())
@@ -145,12 +148,10 @@ func FindID(robj interface{}, id bson.ObjectId) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	t := reflect.ValueOf(robj).Elem().Type()
-	temp := reflect.New(t).Interface()
 	UseCol(col, func(c *mgo.Collection) {
-		err = c.FindId(id).One(temp)
+		err = c.FindId(id).One(robj)
 	})
-	return temp, err
+	return robj, err
 
 }
 
@@ -241,7 +242,6 @@ func UpsertID(robj interface{}) (info *mgo.ChangeInfo, err error) {
 		return
 	}
 	id, err := model.GetID(robj)
-	
 
 	UseCol(col, func(c *mgo.Collection) {
 		info, err = c.UpsertId(id, robj)
@@ -250,13 +250,13 @@ func UpsertID(robj interface{}) (info *mgo.ChangeInfo, err error) {
 }
 
 //Count 计数
-func Count(robj interface{}, qi bson.M, containsDeleted bool) (count int, err error) {
+func Count(robj interface{}, qi bson.M) (count int, err error) {
 	col, err := getCollection(robj)
 	if err != nil {
 		return 0, err
 	}
 	var b bson.M
-	b, err = toQueryBson(robj, qi, containsDeleted)
+	b, err = toQueryBson(robj, qi, false)
 	if err != nil {
 		return 0, err
 	}

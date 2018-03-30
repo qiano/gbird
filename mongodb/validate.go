@@ -79,7 +79,7 @@ func SoleValidation(robj interface{}) (bool, error) {
 			qbson[val] = v
 		}
 	}
-	if count, err := Count(robj, qbson, false); err == nil && count > 0 {
+	if count, err := Count(robj, qbson); err == nil && count > 0 {
 		return false, errors.New("唯一性验证结果：数据已存在，查询字段：" + tval)
 	}
 	return true, nil
