@@ -25,7 +25,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 	}
 	rs := strings.Split(tagval, " ")
 	rname := rs[0]
-	if len(rs) != 5 && len(rs) != 1 {
+	if len(rs) != 2 && len(rs) != 1 {
 		panic(errors.New(reflect.TypeOf(robj).String() + "router设置异常"))
 	}
 	var (
@@ -34,11 +34,14 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 		put    = false
 		delete = false
 	)
-	if len(rs) == 5 {
-		get = rs[1] == "1"
-		post = rs[2] == "1"
-		put = rs[3] == "1"
-		delete = rs[4] == "1"
+	if len(rs) == 2 {
+		sets := rs[1]
+		if len(sets) == 4 {
+			get = sets[0:1] == "1"
+			post = sets[1:2] == "1"
+			put = sets[2:3] == "1"
+			delete = sets[3:4] == "1"
+		}
 	}
 	grp := r.Engine.Group("/api/" + rname)
 	if get {
