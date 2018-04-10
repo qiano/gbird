@@ -35,7 +35,7 @@ func NewApp(name string) *App {
 	r.Use(sessions.Middleware(name+"session", store))
 	r.Use(CORSMiddleware())
 	app := &App{Engine: r, Name: name, TaskManager: cron.New()}
-	r.GET("/", func(c *gin.Context) {
+	r.GET("/isok", func(c *gin.Context) {
 		c.String(200, name+"  server")
 	})
 	r.GET("/api/metadata", func(c *gin.Context) {
