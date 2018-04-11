@@ -75,15 +75,15 @@ func Insert(robj interface{}, userid string) (err error) {
 	}
 
 	model.SetValue(robj, "ID", bson.NewObjectId())
-	_, bval := model.GetValue(robj, "Base")
-	if bval == nil {
-		model.SetValue(robj, "Base", model.Base{
-			Creater:    userid,
-			CreateTime: time.Now(),
-			Updater:    userid,
-			UpdateTime: time.Now(),
-		})
-	}
+	// _, bval := model.GetValue(robj, "Base")
+	// if bval == nil {
+	model.SetValue(robj, "Base", model.Base{
+		Creater:    userid,
+		CreateTime: time.Now(),
+		Updater:    userid,
+		UpdateTime: time.Now(),
+	})
+	// }
 	UseCol(col, func(c *mgo.Collection) {
 		err = c.Insert(&robj)
 	})
