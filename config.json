@@ -10,5 +10,6 @@
 	"wxPayNotify": "https://you-ec-dev.dexdev.me//wxpay/notify",
 	"mchId": "1405027902",
 	"mchApiKey": "1234567890QWERTYUIOPASDFGHJKLZXC",
-	"whitelist": "127.0.0.1,::1"
+	"whitelist": "127.0.0.1,::1",
+	"release": "false"
 }
