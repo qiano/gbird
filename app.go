@@ -2,13 +2,13 @@ package gbird
 
 import (
 	"errors"
+	"gbird/config"
 	"gbird/logger"
 	"gbird/model"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron"
 	"github.com/tommy351/gin-sessions"
 	"strconv"
-	"gbird/config"
 )
 
 //H h
@@ -29,9 +29,11 @@ type App struct {
 //NewApp 创建实例
 func NewApp(name string) *App {
 	release := config.Config["release"]
-	re, err := strconv.ParseBool(release)
-	if err == nil && re {
-		gin.SetMode(gin.ReleaseMode)
+	if release != "" {
+		re, err := strconv.ParseBool(release)
+		if err == nil && re {
+			gin.SetMode(gin.ReleaseMode)
+		}
 	}
 	logger.Infoln("应用启动：" + name)
 	var store = sessions.NewCookieStore([]byte(name))
