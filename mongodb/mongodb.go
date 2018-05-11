@@ -201,14 +201,16 @@ func Update(robj interface{}, q, u bson.M, userid string, batch bool) (info *mgo
 	temp["base.updatetime"] = time.Now()
 	temp["base.updater"] = userid
 	UseCol(col, func(c *mgo.Collection) {
-
 		if batch {
 			if info, err = c.UpdateAll(qi, up); err != nil {
 			}
 		} else {
-			if err = c.Update(qi, up); err != nil {
-				info.Updated = 1
+			if err = c.Update(qi, up); err == nil {
+				info = &mgo.ChangeInfo{Updated: 1}
 			}
+		}
+		if err != nil {
+			logger.Fatalln(err)
 		}
 	})
 	return
