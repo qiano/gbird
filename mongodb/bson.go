@@ -35,11 +35,11 @@ func toLower(q map[string]interface{}) bson.M {
 					arr = append(arr, v)
 				}
 			} else {
-				temp := val.([]interface{})
 				if reflect.TypeOf(val).String() != "map[string]interface {}" {
 					ret[strings.ToLower(key)] = val
 					continue
 				}
+				temp := val.([]interface{})
 				for i := 0; i < len(temp); i++ {
 					v := temp[i].(map[string]interface{})
 					v = toLower(v)
