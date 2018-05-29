@@ -1,7 +1,6 @@
 package gbird
 
 import (
-	"errors"
 	"gbird/config"
 	"gbird/logger"
 	"gbird/model"
@@ -94,14 +93,8 @@ func (c *Context) RetError(err error) {
 }
 
 //GetCurUser 获取当前用户ID和名称
-var GetCurUser = func(r *Context) (UserInterface, error) {
-	ss := sessions.Get(r.Context)
-	user := ss.Get("user")
-	if user != nil {
-		u := user.(*User)
-		return u, nil
-	}
-	return nil, errors.New("未找到当前用户")
+var GetCurUser = func(r *Context) (map[string]interface{}, error) {
+	return nil, nil
 }
 
 //GetSession getsession

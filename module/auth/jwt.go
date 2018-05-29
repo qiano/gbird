@@ -99,7 +99,12 @@ func ValidateTokenMiddleware(needToken func(*gbird.Context) bool) func(*gbird.Co
 						c.AbortWithStatusJSON(200, gin.H{"errcode": 1, "errmsg": "no token"})
 						return
 					}
-					_, err := validation(strings.Split(token, " ")[1])
+					temps := strings.Split(token, " ")
+					if len(temps) != 2 {
+						c.AbortWithStatusJSON(200, gin.H{"errcode": 1, "errmsg": "no token"})
+						return
+					}
+					_, err := validation(temps[1])
 					if err != nil {
 						c.AbortWithStatusJSON(200, gin.H{"errcode": 2, "errmsg": err.Error()})
 						return
@@ -111,16 +116,17 @@ func ValidateTokenMiddleware(needToken func(*gbird.Context) bool) func(*gbird.Co
 }
 
 //GetTokenData  获取token携带数据
-func GetTokenData(c *gbird.Context) interface{} {
+func GetTokenData(c *gbird.Context) (string, interface{}) {
 	token := getToken(c.Context)
 	if token == "" {
-		return nil
+		return "", nil
 	}
+	flag := strings.Split(token, " ")[0]
 	tt, err := validation(strings.Split(token, " ")[1])
 	if err != nil {
-		return getTokenData(tt)
+		return "", nil
 	}
-	return nil
+	return flag, getTokenData(tt)
 }
 
 func verify(c *gbird.Context) (interface{}, error) {

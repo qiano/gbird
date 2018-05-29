@@ -140,7 +140,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if GetCurUser != nil {
 				user, err := GetCurUser(&Context{Context: c})
 				if err == nil {
-					uid = user.UserID()
+					uid = user["ID"].(string)
 				}
 			}
 			if beforeHandler != nil {
@@ -178,7 +178,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if GetCurUser != nil {
 				user, err := GetCurUser(&Context{Context: c})
 				if err == nil {
-					uid = user.UserID()
+					uid = user["ID"].(string)
 				}
 			}
 			if beforeHandler != nil {
@@ -225,7 +225,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if GetCurUser != nil {
 				user, err := GetCurUser(&Context{Context: c})
 				if err == nil {
-					uid = user.UserID()
+					uid = user["ID"].(string)
 				}
 			}
 			if beforeHandler != nil {
