@@ -1,6 +1,7 @@
 package util
 
 import (
+	"crypto"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
@@ -9,15 +10,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
-	"crypto"
 )
 
 //Md5 md5加密
 func Md5(text string) string {
 	hashMd5 := md5.New()
 	io.WriteString(hashMd5, text)
-	return fmt.Sprintf("%x", hashMd5.Sum(nil))
+	return strings.ToUpper(fmt.Sprintf("%x", hashMd5.Sum(nil)))
 }
 
 //GenUUID 产生唯一的id
@@ -40,10 +41,9 @@ func RsaEncrypt(origData []byte, publicKey []byte) ([]byte, error) {
 	pub := pubInterface.(*rsa.PublicKey)
 
 	h := crypto.Hash.New(crypto.SHA1)
-    h.Write(origData)
-    // hashed := h.Sum(nil)
+	h.Write(origData)
+	// hashed := h.Sum(nil)
 
-	
 	return rsa.EncryptOAEP(h, rand.Reader, pub, origData, []byte(""))
 	// return rsa.EncryptPKCS1v15(rand.Reader, pub, origData)
 }

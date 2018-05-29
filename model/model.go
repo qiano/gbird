@@ -34,7 +34,7 @@ func init() {
 	Metadatas = make(map[string]map[string]FieldInfo)
 }
 
-var mtags = []string{"collection", "router","sole"}                                          //模型标签
+var mtags = []string{"collection", "router", "sole"}                                  //模型标签
 var ftags = []string{"bson", "required", "default", "desc", "display", "ref", "enum"} //字段标签
 
 //RegisterMetadata 将模型注册到源数据信息中
@@ -235,7 +235,12 @@ func GetEnum(robj interface{}, field string) (map[string]string, error) {
 	kvs := strings.Split(val, ",")
 	for j := 0; j < len(kvs); j++ {
 		ss := strings.Split(kvs[j], ":")
-		rets[ss[0]] = ss[1]
+		if len(ss) == 1 {
+			rets[ss[0]] = ss[0]
+		}
+		if len(ss) == 2 {
+			rets[ss[0]] = ss[1]
+		}
 	}
 	return rets, nil
 }
@@ -248,3 +253,7 @@ func GetEnumDesc(robj interface{}, fieldname, code string) string {
 	}
 	return enums[code]
 }
+
+
+
+

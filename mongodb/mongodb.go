@@ -62,16 +62,18 @@ func Insert(robj interface{}, userid string) (err error) {
 	}
 	for _, f := range fs {
 		_, val := model.GetValue(robj, f)
-		ref := val.(mgo.DBRef)
-		id := ref.Id.(string)
-		c, er := model.FTagVal(robj, f, "ref")
-		if er != nil {
-			return er
+		if val != nil {
+			ref := val.(mgo.DBRef)
+			id := ref.Id.(string)
+			c, er := model.FTagVal(robj, f, "ref")
+			if er != nil {
+				return er
+			}
+			ref.Id = bson.ObjectIdHex(id)
+			ref.Collection = c
+			ref.Database = DbName
+			model.SetValue(robj, f, ref)
 		}
-		ref.Id = bson.ObjectIdHex(id)
-		ref.Collection = c
-		ref.Database = DbName
-		model.SetValue(robj, f, ref)
 	}
 
 	model.SetValue(robj, "ID", bson.NewObjectId())

@@ -74,11 +74,9 @@ func Middleware(authFn func(*Context) bool, verifyTokenFn func(string) (User, er
 	logger.Infoln("帐户权限验证：开启")
 	return GinToBird(
 		func(c *gin.Context) {
-			if !whitelist(c) && !authFn(&Context{c}) && verifyTokenFn != nil {
+			if !whitelist(c) && !authFn(&Context{Context: c}) && verifyTokenFn != nil {
 				token := getToken(c)
 				if token != "" {
-					var wu struct{ Data User }
-					var err error
 					// res, err := http.Get(verifyURL + "?token=" + token)
 					// if err != nil {
 					// 	fmt.Println(err.Error())
@@ -104,18 +102,18 @@ func Middleware(authFn func(*Context) bool, verifyTokenFn func(string) (User, er
 					// json.Unmarshal(body, &wu)
 					u, err := verifyTokenFn(token)
 					if err == nil {
-						wu = struct{ Data User }{Data: u}
-					}
-					if err == nil {
 						ss := sessions.Get(c)
-						ss.Set("user", &wu.Data)
+						ss.Set("user", &u)
 						ss.Save()
+					} else {
+						c.AbortWithStatusJSON(200, gin.H{"errcode": 0, "errmsg": err.Error()})
+						return
 					}
 					c.Next()
 					return
 				}
-				logger.Fatalln("no token")
-				c.AbortWithStatusJSON(200, gin.H{"errorcode": 0, "errormsg": "no token"})
+				logger.Fatalln(c.Request.URL.Path + " no token")
+				c.AbortWithStatusJSON(200, gin.H{"errcode": 0, "errmsg": "no token"})
 				return
 			}
 			c.Next()

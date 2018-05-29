@@ -73,7 +73,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if beforeHandler != nil {
 				beforeHandler(&Context{Context: c}, nil)
 			}
-			gc := Context{c}
+			gc := Context{Context:c}
 
 			qi, err := m.ToBson(cond)
 			if err != nil {
@@ -107,7 +107,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 
 		//ID查询
 		grp.GET("/id", func(c *gin.Context) {
-			gc := Context{c}
+			gc := Context{Context:c}
 			val, _ := c.GetQuery("val")
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, val)
@@ -146,7 +146,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, obj)
 				if err != nil {
-					gc := Context{c}
+					gc := Context{Context:c}
 					gc.RetError(err)
 					return
 				}
@@ -155,7 +155,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if afterHandler != nil {
 				obj, err = afterHandler(&Context{Context: c}, obj, err)
 			}
-			gc := Context{c}
+			gc := Context{Context:c}
 			if err != nil {
 				gc.RetError(err)
 			} else {
@@ -166,7 +166,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 	if put {
 		//修改
 		grp.PUT("", func(c *gin.Context) {
-			gc := Context{c}
+			gc := Context{Context:c}
 			cond := c.PostForm("cond")
 			doc := c.PostForm("doc")
 			multi := c.PostForm("multi")
@@ -214,7 +214,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 	if delete {
 		//删除
 		grp.DELETE("", func(c *gin.Context) {
-			gc := Context{c}
+			gc := Context{Context: c}
 			cond := c.PostForm("cond")
 			multi := c.PostForm("multi")
 			b, err := strconv.ParseBool(multi)
