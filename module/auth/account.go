@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"strings"
 	"errors"
 	"gbird"
 	"gbird/model"
@@ -69,7 +70,7 @@ func logoutHandler(c *gbird.Context) {
 func registerHandler(c *gbird.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
-	err := mongodb.Insert(&model.User{UserName: username, Password: util.Md5(password), IsActive: true}, "")
+	err := mongodb.Insert(&model.User{UserName: username, Password: strings.ToUpper(util.Md5(password)), IsActive: true}, "")
 	if err != nil {
 		c.RetError(err)
 		return

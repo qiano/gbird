@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 )
 
@@ -18,7 +17,7 @@ import (
 func Md5(text string) string {
 	hashMd5 := md5.New()
 	io.WriteString(hashMd5, text)
-	return strings.ToUpper(fmt.Sprintf("%x", hashMd5.Sum(nil)))
+	return fmt.Sprintf("%x", hashMd5.Sum(nil))
 }
 
 //GenUUID 产生唯一的id
