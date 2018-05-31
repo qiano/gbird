@@ -1,12 +1,16 @@
 package gbird
 
 import (
+	"errors"
 	"gbird/config"
 	"gbird/logger"
 	"gbird/model"
+	"gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron"
 	"github.com/tommy351/gin-sessions"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 	"strconv"
 )
 
@@ -92,11 +96,6 @@ func (c *Context) RetError(err error) {
 	c.JSON(200, H{"errmsg": err.Error()})
 }
 
-//GetCurUser 获取当前用户ID和名称
-var GetCurUser = func(r *Context) (map[string]interface{}, error) {
-	return nil, nil
-}
-
 //GetSession getsession
 func GetSession(c *Context) sessions.Session {
 	ss := sessions.Get(c.Context)
@@ -110,21 +109,25 @@ func (a *App) Use(middleware ...func(*Context)) {
 
 //POST post
 func (a *App) POST(relativePath string, handlers ...func(c *Context)) {
+	RegisterAPIPermission(relativePath, "POST")
 	a.Engine.POST(relativePath, BirdToGin(handlers...)...)
 }
 
 //GET get
 func (a *App) GET(relativePath string, handlers ...func(c *Context)) {
+	RegisterAPIPermission(relativePath, "GET")
 	a.Engine.GET(relativePath, BirdToGin(handlers...)...)
 }
 
 //PUT put
 func (a *App) PUT(relativePath string, handlers ...func(c *Context)) {
+	RegisterAPIPermission(relativePath, "PUT")
 	a.Engine.PUT(relativePath, BirdToGin(handlers...)...)
 }
 
 //DELETE delete
 func (a *App) DELETE(relativePath string, handlers ...func(c *Context)) {
+	RegisterAPIPermission(relativePath, "DELETE")
 	a.Engine.DELETE(relativePath, BirdToGin(handlers...)...)
 }
 
@@ -138,10 +141,33 @@ func BirdToGin(handlers ...func(c *Context)) []gin.HandlerFunc {
 	}
 	return ginHandlers
 }
-
 //GinToBird 类型转换
 func GinToBird(handler func(c *gin.Context)) func(*Context) {
 	return func(gc *Context) {
 		handler(gc.Context)
 	}
+}
+
+//RegisterAPIPermission 注册API权限
+func RegisterAPIPermission(path, method string) error {
+	code := method + " " + path
+	_, err := mongodb.FindOne(&model.Permission{}, bson.M{"code": code})
+	if err != nil {
+		err := mongodb.Insert(&model.Permission{Code: code, Desc: code, Type: "API"}, "")
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	logger.Fatalln(code + " 权限已存在")
+	return err
+}
+//ClearAPIPermission 清空API权限
+func ClearAPIPermission() (info *mgo.ChangeInfo, err error) {
+	return mongodb.ShiftDelete(&model.Permission{}, bson.M{"type": "API"})
+
+}
+//GetCurUser 获取当前用户ID和名称
+var GetCurUser = func(c *Context) (map[string]interface{}, error) {
+	return nil, errors.New("未设置获取当前用户方法")
 }

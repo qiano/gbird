@@ -43,9 +43,11 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			delete = sets[3:4] == "1"
 		}
 	}
-	grp := r.Engine.Group("/api/" + rname)
+	path := "/api/" + rname
+	grp := r.Engine.Group(path)
 	if get {
 		//查询
+		RegisterAPIPermission(path, "GET")
 		grp.GET("", func(c *gin.Context) {
 			r, _ := c.GetQuery("range")
 			if r == "" {
@@ -73,7 +75,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if beforeHandler != nil {
 				beforeHandler(&Context{Context: c}, nil)
 			}
-			gc := Context{Context:c}
+			gc := Context{Context: c}
 
 			qi, err := m.ToBson(cond)
 			if err != nil {
@@ -106,8 +108,9 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 		})
 
 		//ID查询
+		RegisterAPIPermission(path+"/id", "GET")
 		grp.GET("/id", func(c *gin.Context) {
-			gc := Context{Context:c}
+			gc := Context{Context: c}
 			val, _ := c.GetQuery("val")
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, val)
@@ -130,6 +133,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 	}
 	if post {
 		//新增
+		RegisterAPIPermission(path, "POST")
 		grp.POST("", func(c *gin.Context) {
 			body, _ := ioutil.ReadAll(c.Request.Body)
 			data := (string)(body)
@@ -146,7 +150,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if beforeHandler != nil {
 				err := beforeHandler(&Context{Context: c}, obj)
 				if err != nil {
-					gc := Context{Context:c}
+					gc := Context{Context: c}
 					gc.RetError(err)
 					return
 				}
@@ -155,7 +159,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 			if afterHandler != nil {
 				obj, err = afterHandler(&Context{Context: c}, obj, err)
 			}
-			gc := Context{Context:c}
+			gc := Context{Context: c}
 			if err != nil {
 				gc.RetError(err)
 			} else {
@@ -165,8 +169,9 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 	}
 	if put {
 		//修改
+		RegisterAPIPermission(path, "PUT")
 		grp.PUT("", func(c *gin.Context) {
-			gc := Context{Context:c}
+			gc := Context{Context: c}
 			cond := c.PostForm("cond")
 			doc := c.PostForm("doc")
 			multi := c.PostForm("multi")
@@ -213,6 +218,7 @@ func (r *App) Register(robj interface{}, beforeHandler func(c *Context, data int
 	}
 	if delete {
 		//删除
+		RegisterAPIPermission(path, "DELETE")
 		grp.DELETE("", func(c *gin.Context) {
 			gc := Context{Context: c}
 			cond := c.PostForm("cond")

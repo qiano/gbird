@@ -4,7 +4,7 @@ import (
 	"errors"
 	"gbird/logger"
 	"gbird/model"
-	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2"	
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
 	"time"
@@ -100,6 +100,18 @@ func Remove(robj interface{}, qi bson.M, userid string, batch bool) (info *mgo.C
 	}
 	UseCol(col, func(c *mgo.Collection) {
 		info, err = Update(robj, qi, bson.M{"base.isdelete": true}, userid, batch)
+	})
+	return
+}
+
+//ShiftDelete  彻底删除
+func ShiftDelete(robj interface{}, qi bson.M) (info *mgo.ChangeInfo, err error) {
+	col, err := getCollection(robj)
+	if err != nil {
+		return
+	}
+	UseCol(col, func(c *mgo.Collection) {
+		info, err = c.RemoveAll(qi)
 	})
 	return
 }

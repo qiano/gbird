@@ -70,7 +70,8 @@ func getTokenData(token *jwt.Token) interface{} {
 	return nil
 }
 
-func getToken(c *gin.Context) string {
+//GetTokenString 获取token字符串
+func GetTokenString(c *gin.Context) string {
 	token := c.Request.Header.Get("Authorization")
 	if token == "" {
 		token = c.Request.Header.Get("token")
@@ -94,7 +95,7 @@ func ValidateTokenMiddleware(needToken func(*gbird.Context) bool) func(*gbird.Co
 		func(c *gin.Context) {
 			if c.Request.URL.Path != "/api/auth/login" && c.Request.URL.Path != "/api/auth/register" {
 				if needToken == nil || needToken(&gbird.Context{Context: c}) {
-					token := getToken(c)
+					token := GetTokenString(c)
 					if token == "" {
 						c.AbortWithStatusJSON(200, gin.H{"errcode": 1, "errmsg": "no token"})
 						return
@@ -103,6 +104,12 @@ func ValidateTokenMiddleware(needToken func(*gbird.Context) bool) func(*gbird.Co
 					if len(temps) != 2 {
 						c.AbortWithStatusJSON(200, gin.H{"errcode": 1, "errmsg": "no token"})
 						return
+					}
+					for i := 0; i < len(blackTokenList); i++ {
+						if token == blackTokenList[i] {
+							c.AbortWithStatusJSON(200, gin.H{"errcode": 2, "errmsg": "token 已失效"})
+							return
+						}
 					}
 					_, err := validation(temps[1])
 					if err != nil {
@@ -117,7 +124,7 @@ func ValidateTokenMiddleware(needToken func(*gbird.Context) bool) func(*gbird.Co
 
 //GetTokenData  获取token携带数据
 func GetTokenData(c *gbird.Context) (string, interface{}) {
-	token := getToken(c.Context)
+	token := GetTokenString(c.Context)
 	if token == "" {
 		return "", nil
 	}
@@ -130,7 +137,7 @@ func GetTokenData(c *gbird.Context) (string, interface{}) {
 }
 
 func verify(c *gbird.Context) (interface{}, error) {
-	token := getToken(c.Context)
+	token := GetTokenString(c.Context)
 	if token == "" {
 		return nil, errors.New("no token")
 	}
