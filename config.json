@@ -1,0 +1,15 @@
+{
+	"port": "8767",
+	"mongodbHost": "127.0.0.1:27017",
+	"mongodbDbName": "you",
+	"logconsole": "1",
+	"authverifyurl": "https://127.0.0.1:8766/v1/auth/verify",
+	"debug": "true",
+	"wxAppId": "wx0e9958ebcc72b997",
+	"wxAppSecret": "4bdde9cff4a2d284b58b92bc23ab27af",
+	"wxPayNotify": "https://you-ec-dev.dexdev.me//wxpay/notify",
+	"mchId": "1405027902",
+	"mchApiKey": "1234567890QWERTYUIOPASDFGHJKLZXC",
+	"whitelist": "127.0.0.1,::1",
+	"release": "false"
+}
