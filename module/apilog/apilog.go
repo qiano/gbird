@@ -2,10 +2,10 @@ package apilog
 
 import (
 	"bytes"
-	"gbird"
-	"gbird/logger"
-	"gbird/model"
-	m "gbird/mongodb"
+	"github.com/qiano/gbird"
+	"github.com/qiano/gbird/logger"
+	"github.com/qiano/gbird/model"
+	m "github.com/qiano/gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"

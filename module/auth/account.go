@@ -3,10 +3,10 @@ package auth
 import (
 	"strings"
 	"errors"
-	"gbird"
-	"gbird/model"
-	"gbird/mongodb"
-	"gbird/util"
+	"github.com/qiano/gbird"
+	"github.com/qiano/gbird/model"
+	"github.com/qiano/gbird/mongodb"
+	"github.com/qiano/gbird/util"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
 )

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-// 项目根目录
+//ROOT 项目根目录
 var ROOT string
 var DebugEnv bool
 var Config map[string]string

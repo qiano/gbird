@@ -2,8 +2,8 @@ package mongodb
 
 import (
 	"errors"
-	"gbird/logger"
-	"gbird/model"
+	"github.com/qiano/gbird/logger"
+	"github.com/qiano/gbird/model"
 	"gopkg.in/mgo.v2"	
 	"gopkg.in/mgo.v2/bson"
 	"reflect"

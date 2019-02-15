@@ -2,7 +2,7 @@ package upload
 
 import (
 	"fmt"
-	"gbird/util"
+	"github.com/qiano/gbird/util"
 	"io"
 	"mime/multipart"
 	"os"

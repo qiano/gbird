@@ -2,10 +2,10 @@ package gbird
 
 import (
 	"errors"
-	"gbird/config"
-	"gbird/logger"
-	"gbird/model"
-	"gbird/mongodb"
+	"github.com/qiano/gbird/config"
+	"github.com/qiano/gbird/logger"
+	"github.com/qiano/gbird/model"
+	"github.com/qiano/gbird/mongodb"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron"
 	"github.com/tommy351/gin-sessions"

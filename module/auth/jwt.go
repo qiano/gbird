@@ -2,9 +2,9 @@ package auth
 
 import (
 	"errors"
-	"gbird"
-	"gbird/config"
-	"gbird/logger"
+	"github.com/qiano/gbird"
+	"github.com/qiano/gbird/config"
+	"github.com/qiano/gbird/logger"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"strings"
