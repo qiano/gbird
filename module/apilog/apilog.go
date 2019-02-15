@@ -53,14 +53,14 @@ func Middleware(getDesc func(string) string) func(*gbird.Context) {
 			IP:                c.ClientIP(),
 			QueryStringParams: c.Request.URL.RawQuery,
 			RequestDesc:       desc}
-		var uid string
-		user, err := gbird.GetCurUser(&gbird.Context{Context: c})
-		if err == nil {
-			uid = user.UserID()
-			log.UserID = user.UserID()
-			log.UserName = user.DisplayName()
-		}
-		m.Insert(log, uid)
+		// var uid string
+		// user, err := gbird.GetCurUser(&gbird.Context{Context: c})
+		// if err == nil {
+			// uid = user.UserID()
+			// log.UserID = user.UserID()
+			// log.UserName = user.DisplayName()
+		// }
+		m.Insert(log, "")
 		c.Next()
 	})
 }

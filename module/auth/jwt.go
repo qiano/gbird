@@ -77,13 +77,25 @@ func GetTokenString(c *gin.Context) string {
 		token = c.Request.Header.Get("token")
 	}
 	if token == "" {
+		token = c.Request.Header.Get("access_token")
+	}
+	if token == "" {
 		token = c.Query("token")
+	}
+	if token == "" {
+		token = c.Query("access_token")
 	}
 	if token == "" {
 		token = c.Param("token")
 	}
 	if token == "" {
+		token = c.Param("access_token")
+	}
+	if token == "" {
 		token = c.PostForm("token")
+	}
+	if token == "" {
+		token = c.PostForm("access_token")
 	}
 	return token
 }

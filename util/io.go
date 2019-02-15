@@ -83,3 +83,22 @@ func SaveFile(savedir, filename string, data []byte) error {
 	ioutil.WriteFile(savedir+filename, data, 0666)
 	return nil
 }
+
+//MapFilelist 遍历文件夹
+func MapFilelist(path string) ([]string, error) {
+	result := make([]string, 0, 0)
+	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+		if f == nil {
+			return err
+		}
+		if f.IsDir() {
+			return nil
+		}
+		result = append(result, path)
+		return nil
+	})
+	if err != nil {
+		return result, err
+	}
+	return result, err
+}
