@@ -3,7 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
-	"gbird/logger"
+	"github.com/qiano/gbird/logger"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
 	"strconv"

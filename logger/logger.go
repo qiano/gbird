@@ -20,7 +20,7 @@ package logger
 
 import (
 	"fmt"
-	"gbird/config"
+	"github.com/qiano/gbird/config"
 	"io"
 	"log"
 	"os"

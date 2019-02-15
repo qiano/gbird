@@ -2,7 +2,7 @@ package mongodb
 
 import (
 	"errors"
-	"gbird/model"
+	"github.com/qiano/gbird/model"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
 	"strings"

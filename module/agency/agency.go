@@ -1,8 +1,8 @@
 package agency
 
 import (
-	"gbird"
-	"gbird/logger"
+	"github.com/qiano/gbird"
+	"github.com/qiano/gbird/logger"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
