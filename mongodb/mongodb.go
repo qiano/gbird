@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/qiano/gbird/logger"
 	"github.com/qiano/gbird/model"
-	"gopkg.in/mgo.v2"	
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"reflect"
 	"time"
@@ -22,6 +22,7 @@ func Use(mongodbstr, dbName string) {
 		logger.Errorln("Mongodb：", err)
 		panic(err)
 	}
+
 	logger.Infoln("Mondodb连接成功：" + mongodbstr + "  " + DbName)
 	GlobalMgoSession = globalMgoSession
 	GlobalMgoSession.SetMode(mgo.Monotonic, true)
@@ -261,6 +262,18 @@ func UpsertID(robj interface{}) (info *mgo.ChangeInfo, err error) {
 
 	UseCol(col, func(c *mgo.Collection) {
 		info, err = c.UpsertId(id, robj)
+	})
+	return
+}
+
+func Upsert(selector interface{}, robj interface{}) (info *mgo.ChangeInfo, err error) {
+	col, err := getCollection(robj)
+	if err != nil {
+		return
+	}
+
+	UseCol(col, func(c *mgo.Collection) {
+		info, err = c.Upsert(selector, robj)
 	})
 	return
 }

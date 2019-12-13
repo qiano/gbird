@@ -29,7 +29,7 @@ func init() {
 }
 
 func init() {
-	LoadConfig("/config.json")
+	LoadConfig("config.json")
 	var pDebugEnv *bool
 	pDebugEnv = flag.Bool("d", false, "enable debug for dev")
 	flag.Parse()
@@ -37,7 +37,7 @@ func init() {
 }
 
 func get_config_path(file string) (filepath string) {
-	return ROOT + file
+	return file
 }
 
 func load_config(file string) (config map[string]string, err error) {
