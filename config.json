@@ -1,6 +1,6 @@
 {
 	"port": "8767",
-	"mongodbHost": "127.0.0.1:27017",
+	"mongodbHost": "mongodb://root:ea2KhHH5wmkz@dds-wz92fc48e6016c041.mongodb.rds.aliyuncs.com:3717,dds-wz92fc48e6016c042.mongodb.rds.aliyuncs.com:3717/you-prod?replicaSet=mgset-14159131",
 	"mongodbDbName": "you",
 	"logconsole": "1",
 	"authverifyurl": "https://127.0.0.1:8766/v1/auth/verify",
